@@ -37,7 +37,16 @@ export class SoomgoBotService {
     private isAutomationProcessing: boolean = false;
     private currentProcessingChatId: string | null = null;
     private processedChatIds: Set<string> = new Set();
-    private readonly PROCESSED_CHATS_FILE = path.resolve(process.cwd(), 'processed_chats.json');
+    
+    private get userDataPath() {
+        return require('electron').app.getPath('userData');
+    }
+
+    private get configPath() {
+        return path.join(this.userDataPath, 'config.json');
+    }
+
+    private readonly PROCESSED_CHATS_FILE = path.join(require('electron').app.getPath('userData'), 'processed_chats.json');
 
     constructor(
         private engine: TemplateEngine,
@@ -205,9 +214,8 @@ export class SoomgoBotService {
             await this.performLogin();
 
             // 새로고침 타이머 설정
-            const configPath = path.resolve(process.cwd(), 'config.json');
-            if (fs.existsSync(configPath)) {
-                const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            if (fs.existsSync(this.configPath)) {
+                const cfg = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
                 if (cfg.refreshInterval !== undefined) this.refreshInterval = cfg.refreshInterval;
                 if (cfg.isRefreshEnabled !== undefined) this.isRefreshEnabled = cfg.isRefreshEnabled;
             }
@@ -267,10 +275,12 @@ export class SoomgoBotService {
         if (!this.page) return;
 
         try {
-            const configPath = path.resolve(process.cwd(), 'config.json');
-            if (!fs.existsSync(configPath)) return;
+            if (!fs.existsSync(this.configPath)) {
+                console.warn('⚠️ config.json 파일을 찾을 수 없어 자동 로그인을 건너뜁니다.');
+                return;
+            }
 
-            const loginConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            const loginConfig = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
             if (!loginConfig.email || !loginConfig.password || loginConfig.email.includes('YOUR_EMAIL')) return;
 
             console.log('🔐 자동 로그인 시도 중...');
@@ -296,10 +306,9 @@ export class SoomgoBotService {
 
         let safeMode = forcedValue;
         if (safeMode === undefined) {
-            const configPath = path.resolve(process.cwd(), 'config.json');
             safeMode = true;
-            if (fs.existsSync(configPath)) {
-                const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            if (fs.existsSync(this.configPath)) {
+                const cfg = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
                 safeMode = cfg.safeMode !== false;
             }
         }
@@ -343,7 +352,7 @@ export class SoomgoBotService {
 
     async getPreview(data: ExtractionData) {
         const details = this.engine.getAutomationDetails(data);
-        const baseDir = this.config?.imageDir || path.resolve(process.cwd(), 'images');
+        const baseDir = this.config?.imageDir || path.join(this.userDataPath, 'images');
 
         let previewMessage = '';
         let previewImagePath = '이미지 없음';

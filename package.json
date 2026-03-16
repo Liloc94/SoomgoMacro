@@ -9,7 +9,7 @@
     "start": "electron .",
     "build": "tsc",
     "dev": "chcp 65001 && tsc && electron .",
-    "package": "npm run build && npx electron-builder"
+    "package": "yarn build && npx electron-builder"
   },
   "build": {
     "appId": "com.whiteclinic.soomgo-macro",
