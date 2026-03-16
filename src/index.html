@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>화이트크리닉 - Macro Automation Program</title>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        :root {
+            --primary: #00c7ae;
+            --primary-dark: #00b19a;
+            --secondary: #1e293b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--secondary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 32px 0;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            padding: 0 32px 40px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-link {
+            padding: 16px 32px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            height: 72px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+        }
+
+        .content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        /* Components */
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-outline {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        /* Custom Styles for Sequences & Rules */
+        .list-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .tag-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+        }
+
+        .tag {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .tag-remove:hover {
+            opacity: 1;
+        }
+
+        .step-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Preview Styles */
+        .preview-pane {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px dashed var(--border);
+            height: fit-content;
+            position: sticky;
+            top: 0;
+        }
+
+        .preview-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .preview-message {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .preview-image-container {
+            width: 100%;
+            height: 200px;
+            background: #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .preview-image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .preview-empty {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        /* Toast Styles */
+        #toastContainer {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            min-width: 300px;
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-left: 5px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-error {
+            border-left-color: var(--danger);
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toastContainer"></div>
+    <div class="sidebar">
+        <div class="brand">🤖 AI MACRO</div>
+        <div class="nav-link active" onclick="switchTab('dashboard')">📊 대시보드</div>
+        <div class="nav-link" onclick="switchTab('trigger')">🎯 트리거 설정</div>
+        <div class="nav-link" onclick="switchTab('scripts')">📝 스크립트 관리</div>
+        <div class="nav-link" onclick="switchTab('sequences')">⚡ 시퀀스 빌더</div>
+        <div class="nav-link" onclick="switchTab('rules')">⚖️ 매칭 규칙</div>
+
+        <div style="margin-top: auto; padding: 20px 32px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between;">
+                <span>활성 프로필</span>
+                <span style="cursor:pointer; color:var(--primary);" onclick="addNewProfile()">+ 추가</span>
+            </div>
+            <div id="profileListArea"></div>
+        </div>
+    </div>
+
+    <div class="main">
+        <header>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <h3 id="tabHeading" style="margin:0;">대시보드</h3>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <span id="statusIndicator" style="font-size: 0.85rem; color: var(--text-muted);">● 서비스 중지됨</span>
+                <button id="toggleBtn" class="btn btn-primary" onclick="toggleBot()">서비스 시작</button>
+                <button class="btn btn-outline" onclick="saveAll()">💾 전체 저장</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Dashboard Tab -->
+            <div id="dashboardTab" class="tab-pane active">
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="section-title">최근 실행 요약</div>
+                        <div style="font-size: 2.5rem; font-weight: 800; margin-top:20px;">0 <small
+                                style="font-size:1rem; color:var(--text-muted);">건</small></div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 32px;">
+                    <div class="section-title">숨고 계정 설정</div>
+                    <div
+                        style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr 120px; gap: 24px; align-items: end;">
+                        <div>
+                            <label
+                                style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">이메일</label>
+                            <input type="text" id="emailInput" placeholder="example@soomgo.com" style="width: 100%;">
+                        </div>
+                        <div>
+                            <label
+                                style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">비밀번호</label>
+                            <div style="position: relative;">
+                                <input type="password" id="passwordInput" placeholder="비밀번호"
+                                    style="width: 100%; padding-right: 40px;">
+                                <span onclick="togglePasswordVisibility()"
+                                    style="position: absolute; right: 10px; top: 12px; cursor: pointer; color: var(--text-muted);">👁️</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="syncSystemSettings()"
+                            style="width: 100%; justify-content: center;">계정 저장</button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 32px;">
+                    <div class="section-title">시스템 설정</div>
+                    <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <div>
+                            <label
+                                style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">
+                                주기적 새로고침 (최소 15초 권장)
+                            </label>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <input type="number" id="refreshIntervalInput" value="6" min="1" style="width: 80px;"
+                                    onchange="syncSystemSettings()">
+                                <button id="refreshToggleBtn" class="btn btn-outline"
+                                    style="flex: 1; justify-content: center;"
+                                    onclick="togglePeriodicRefresh()">비활성화</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label
+                                style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">
+                                시뮬레이션 모드 (테스트용)
+                            </label>
+                            <div id="safeModeIndicator"
+                                style="display: flex; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);">
+                                <div style="flex: 1;">
+                                    <div id="safeStatusText" style="font-weight: 700; font-size: 0.9rem;">-</div>
+                                    <div id="safeStatusDesc" style="font-size: 0.75rem; color: var(--text-muted);">실제
+                                        고객에게 메시지가 전송되지 않습니다.</div>
+                                </div>
+                                <button id="safeModeToggleBtn" class="btn btn-outline" style="white-space: nowrap;"
+                                    onclick="toggleSafeMode()">전환</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 32px;">
+                    <div class="section-title">실시간 로그</div>
+                    <div style="max-height: 400px; overflow-y: auto; margin-top: 20px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="text-align: left; border-bottom: 2px solid var(--border);">
+                                    <th style="padding: 12px;">시간</th>
+                                    <th style="padding: 12px;">고객명</th>
+                                    <th style="padding: 12px;">타입</th>
+                                    <th style="padding: 12px;">내용</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trigger Tab -->
+            <div id="triggerTab" class="tab-pane">
+                <div class="card">
+                    <div class="title-row">
+                        <div class="section-title">채팅 목록 분기 규칙 (last_message -> Sequence)</div>
+                        <button class="btn btn-primary" onclick="addNewTriggerRule()">+ 규칙 추가</button>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                        채팅 목록의 마지막 메시지에 키워드가 하나라도 포함될 경우, 지정된 시퀀스를 즉시 실행합니다.
+                    </p>
+                    <div id="triggerRuleListArea"></div>
+                </div>
+            </div>
+
+            <!-- Scripts Tab -->
+            <div id="scriptsTab" class="tab-pane">
+                <div class="card">
+                    <div class="title-row">
+                        <div class="section-title">메시지 조각(Scripts) 관리</div>
+                        <button class="btn btn-primary" onclick="addNewScript()">+ 새 스크립트</button>
+                    </div>
+                    <div id="scriptListArea" class="grid-2"></div>
+                </div>
+            </div>
+
+            <!-- Sequences Tab -->
+            <div id="sequencesTab" class="tab-pane">
+                <div class="card">
+                    <div class="title-row">
+                        <div class="section-title">전송 시퀀스(Sequence) 빌더</div>
+                        <button class="btn btn-primary" onclick="addNewSequence()">+ 새 시퀀스</button>
+                    </div>
+                    <div style="display: flex; gap: 32px;">
+                        <!-- Nav -->
+                        <div style="width: 220px; border-right: 1px solid var(--border); padding-right: 24px;"
+                            id="sequenceNav"></div>
+
+                        <!-- Editor -->
+                        <div style="flex: 1;" id="sequenceEditorArea">
+                            <div style="color: var(--text-muted); text-align: center; padding: 100px;">좌측 시퀀스를 선택하세요.
+                            </div>
+                        </div>
+
+                        <!-- Preview Panel -->
+                        <div style="width: 320px;" id="sequencePreviewArea">
+                            <div class="preview-pane">
+                                <div class="preview-title">실시간 미리보기 (Live Preview)</div>
+                                <div id="livePreviewContent">
+                                    <div class="preview-empty">시퀀스를 선택하면 미리보기가 표시됩니다.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules Tab -->
+            <div id="rulesTab" class="tab-pane">
+                <div class="card">
+                    <div class="title-row">
+                        <div class="section-title">키워드 매칭 규칙 (Data -> Sequence)</div>
+                        <button class="btn btn-primary" onclick="addNewRule()">+ 규칙 추가</button>
+                    </div>
+                    <div id="ruleListArea"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let appState = null;
+        let isRunning = false;
+
+        const brandOptions = [
+            "삼성전자", "LG전자", "캐리어", "위니아", "기타 / 알 수 없음"
+        ];
+
+        const typeOptions = [
+            "2 in 1 (스탠드 + 벽걸이)", "벽걸이형", "스탠드형 (일반)",
+            "스탠드형 (스마트)", "천장형 (1·2way)", "천장형 (4way)", "기타"
+        ];
+
+        async function init() {
+            appState = await window.electronAPI.getTemplates();
+            const config = await window.electronAPI.getConfig();
+
+            // 시스템 설정 UI 초기화
+            if (config.refreshInterval) {
+                document.getElementById('refreshIntervalInput').value = config.refreshInterval;
+            }
+            if (config.email) {
+                document.getElementById('emailInput').value = config.email;
+            }
+            if (config.password) {
+                document.getElementById('passwordInput').value = config.password;
+            }
+            isRefreshEnabled = config.isRefreshEnabled === true;
+            isSafeMode = config.safeMode !== false; // 기본값 활성(안전 우선)
+            updateRefreshUI();
+            updateSafeModeUI();
+
+            // 에러 알림 리스너 등록
+            window.electronAPI.onError((message) => {
+                showToast(message, 'error');
+            });
+
+            renderAll();
+            startLogPolling();
+        }
+
+        function showToast(message, type = 'primary') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+
+            toast.innerHTML = `
+    <div class="toast-content">
+        <div class="toast-title">${type === 'error' ? '🔴 오류 발생' : 'ℹ️ 알림'}</div>
+        <div class="toast-message">${message}</div>
+    </div>
+    `;
+
+            container.appendChild(toast);
+
+            // Show animation
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Auto hide
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        let isRefreshEnabled = false;
+        let isSafeMode = true;
+
+        function updateRefreshUI() {
+            const btn = document.getElementById('refreshToggleBtn');
+            if (isRefreshEnabled) {
+                btn.innerText = '활성화됨';
+                btn.classList.add('btn-primary');
+                btn.classList.remove('btn-outline');
+            } else {
+                btn.innerText = '비활성화';
+                btn.classList.add('btn-outline');
+                btn.classList.remove('btn-primary');
+            }
+        }
+
+        function updateSafeModeUI() {
+            const btn = document.getElementById('safeModeToggleBtn');
+            const statusText = document.getElementById('safeStatusText');
+            const statusDesc = document.getElementById('safeStatusDesc');
+            const indicator = document.getElementById('safeModeIndicator');
+
+            if (isSafeMode) {
+                statusText.innerText = '🧪 테스트 모드 가동 중';
+                statusText.style.color = '#d97706';
+                statusDesc.innerText = '실제 고객에게 메시지가 전송되지 않습니다.';
+                indicator.style.backgroundColor = '#fffbeb';
+                indicator.style.borderColor = '#fef3c7';
+
+                btn.innerText = '실제 모드로 전환';
+                btn.className = 'btn btn-outline';
+            } else {
+                statusText.innerText = '🚀 실제 전송 모드';
+                statusText.style.color = '#059669';
+                statusDesc.innerText = '실제 고객에게 메시지가 즉시 전송됩니다.';
+                indicator.style.backgroundColor = '#f0fdf4';
+                indicator.style.borderColor = '#dcfce7';
+
+                btn.innerText = '테스트 모드로 전환';
+                btn.className = 'btn btn-primary';
+            }
+        }
+
+        function togglePeriodicRefresh() {
+            isRefreshEnabled = !isRefreshEnabled;
+            updateRefreshUI();
+            syncSystemSettings();
+        }
+
+        function toggleSafeMode() {
+            isSafeMode = !isSafeMode;
+            updateSafeModeUI();
+            syncSystemSettings();
+        }
+
+        function syncSystemSettings() {
+            const interval = parseInt(document.getElementById('refreshIntervalInput').value) || 6;
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+
+            const configUpdate = {
+                refreshInterval: interval,
+                isRefreshEnabled: isRefreshEnabled,
+                safeMode: isSafeMode,
+                email: email,
+                password: password
+            };
+            window.electronAPI.updateConfig(configUpdate);
+            window.electronAPI.saveCredentials(configUpdate); // config.json에 영구 저장
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(tabId + 'Tab').classList.add('active');
+            event.currentTarget.classList.add('active');
+            document.getElementById('tabHeading').innerText = event.currentTarget.innerText.split(' ')[1];
+            renderAll();
+        }
+
+        function renderAll() {
+            if (!appState || !appState.profiles) return;
+            
+            // 프로필 선택 로직 보강
+            const profileKeys = Object.keys(appState.profiles);
+            if (!appState.activeProfile && profileKeys.length > 0) {
+                appState.activeProfile = profileKeys[0];
+            }
+
+            const profile = appState.profiles[appState.activeProfile];
+            
+            // 프로필 목록(사이드바)은 항상 렌더링
+            renderProfileList();
+
+            if (!profile) {
+                // 프로필이 없는 경우 안내 표시 및 나머지 영역 비우기
+                document.querySelectorAll('.tab-pane').forEach(p => {
+                    if (p.id !== 'dashboardTab') {
+                        p.innerHTML = `
+                        <div class="card" style="text-align:center; padding: 80px; color:var(--text-muted);">
+                            <div style="font-size: 3rem; margin-bottom: 20px;">👤</div>
+                            <h3>프로필이 없습니다</h3>
+                            <p style="margin-bottom: 24px;">왼쪽 사이드바의 [+] 버튼을 눌러 새 프로필을 만들어보세요.</p>
+                            <button class="btn btn-primary" onclick="addNewProfile()" style="margin: 0 auto;">첫 프로필 추가하기</button>
+                        </div>`;
+                    }
+                });
+                return;
+            }
+
+            renderTriggerRules(profile);
+            renderScripts(profile);
+            renderSequenceNav(profile);
+            renderRules(profile);
+        }
+
+        function renderProfileList() {
+            const area = document.getElementById('profileListArea');
+            if (!area) return;
+            
+            area.innerHTML = '';
+            Object.entries(appState.profiles).forEach(([id, prof]) => {
+                const item = document.createElement('div');
+                const isActive = appState.activeProfile === id;
+                item.style.cssText = `
+                    padding: 10px 14px;
+                    border-radius: 8px;
+                    margin-bottom: 4px;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: ${isActive ? 'var(--primary)' : 'rgba(255,255,255,0.05)'};
+                    color: ${isActive ? 'white' : '#cbd5e1'};
+                `;
+                item.onclick = () => {
+                    appState.activeProfile = id;
+                    renderAll();
+                };
+                
+                item.innerHTML = `
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${prof.name || id}</span>
+                    ${isActive ? '' : `<span style="opacity: 0.5; font-size: 0.7rem;" onclick="event.stopPropagation(); deleteProfile('${id}')">❌</span>`}
+                `;
+                area.appendChild(item);
+            });
+        }
+
+        function addNewProfile() {
+            const name = prompt('새 프로필 이름을 입력하세요:', '새 프로필');
+            if (!name) return;
+            
+            const id = name.trim();
+            if (appState.profiles[id]) {
+                alert('이미 존재하는 프로필 이름입니다.');
+                return;
+            }
+            
+            appState.profiles[id] = {
+                name: id,
+                triggerRules: [],
+                rules: [],
+                scripts: { "인사": "안녕하세요 {customerName}님!" },
+                sequences: { "기본_응답": [{ type: "text", script: "인사" }] }
+            };
+            appState.activeProfile = id;
+            renderAll();
+            showToast(`'${id}' 프로필이 추가되었습니다.`);
+        }
+
+        function deleteProfile(id) {
+            if (!confirm(`'${id}' 프로필을 삭제하시겠습니까?`)) return;
+            delete appState.profiles[id];
+            if (appState.activeProfile === id) {
+                appState.activeProfile = Object.keys(appState.profiles)[0] || null;
+            }
+            renderAll();
+            showToast('프로필이 삭제되었습니다.');
+        }
+
+        // --- Trigger Logic (Rules) ---
+        function renderTriggerRules(profile) {
+            const area = document.getElementById('triggerRuleListArea');
+            const sequences = Object.keys(profile.sequences);
+
+            area.innerHTML = `
+    <table style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr style="text-align:left; border-bottom:1px solid var(--border);">
+                <th style="padding:12px;">감시 키워드 (쉼표로 구분)</th>
+                <th style="padding:12px;">실행할 시퀀스</th>
+                <th style="padding:12px;">액션</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${(profile.triggerRules || []).map((rule, i) => `
+            <tr>
+                <td style="padding:12px;">
+                    <input type="text" value="${rule.keywords.join(', ')}"
+                        onchange="updateTriggerRuleKeywords(${i}, this.value)">
+                </td>
+                <td style="padding:12px;">
+                    <select onchange="updateTriggerRuleTarget(${i}, this.value)">
+                        <option value="__AUTO__" ${rule.target === '__AUTO__' ? 'selected' : ''}>🤖 데이터 분석 후 자동 매칭
+                        </option>
+                        ${sequences.map(s => `<option value="${s}" ${rule.target === s ? 'selected' : ''}>${s}</option>
+                        `).join('')}
+                    </select>
+                </td>
+                <td style="padding:12px;">
+                    <button class="btn btn-danger" onclick="deleteTriggerRule(${i})">삭제</button>
+                </td>
+            </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    `;
+        }
+
+        function updateTriggerRuleKeywords(i, val) {
+            appState.profiles[appState.activeProfile].triggerRules[i].keywords = val.split(',').map(k => k.trim()).filter(k =>
+                k);
+        }
+
+        function updateTriggerRuleTarget(i, val) {
+            appState.profiles[appState.activeProfile].triggerRules[i].target = val;
+        }
+
+        function addNewTriggerRule() {
+            const profile = appState.profiles[appState.activeProfile];
+            if (!profile.triggerRules) profile.triggerRules = [];
+            profile.triggerRules.push({ keywords: ["키워드"], target: Object.keys(profile.sequences)[0] });
+            renderAll();
+        }
+
+        function deleteTriggerRule(i) {
+            appState.profiles[appState.activeProfile].triggerRules.splice(i, 1);
+            renderAll();
+        }
+
+        // --- Scripts Logic ---
+        function renderScripts(profile) {
+            const area = document.getElementById('scriptListArea');
+            area.innerHTML = '';
+
+            Object.entries(profile.scripts).forEach(([key, value]) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.cssText = 'padding: 20px; display: flex; flex-direction: column; gap: 12px; border-left: 4px solid var(--primary);';
+
+                card.innerHTML = `
+                <div>
+                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">스크립트 제목 (Key)</label>
+                    <input type="text" class="script-key-input" style="font-weight:700; margin-top: 4px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">내용</label>
+                    <textarea rows="6" class="script-value-input" style="height: 150px; margin-top: 4px;"></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn btn-danger delete-script-btn" style="padding: 6px 12px; font-size:0.75rem;">🗑️ 삭제</button>
+                </div>
+            `;
+
+                const keyInput = card.querySelector('.script-key-input');
+                keyInput.value = key;
+                keyInput.onchange = (e) => updateScriptKey(key, e.target.value);
+                keyInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.target.blur(); // onchange 트리거
+                    }
+                };
+
+                const valInput = card.querySelector('.script-value-input');
+                valInput.value = value;
+                valInput.oninput = (e) => updateScriptValue(key, e.target.value);
+
+                const delBtn = card.querySelector('.delete-script-btn');
+                delBtn.onclick = () => deleteScript(key);
+
+                area.appendChild(card);
+            });
+        }
+
+        function updateScriptKey(oldKey, newKey) {
+            if (!newKey || oldKey === newKey) {
+                renderAll();
+                return;
+            }
+
+            const profile = appState.profiles[appState.activeProfile];
+
+            // 중복 체크
+            if (profile.scripts[newKey]) {
+                showToast('이미 존재하는 제목입니다.', 'error');
+                renderAll();
+                return;
+            }
+
+            const scripts = profile.scripts;
+
+            // 1. 키 이름 변경 (객체 속성 변경)
+            // 순서 유지를 위해 새 객체를 생성하는 것이 좋습니다.
+            const newScripts = {};
+            Object.keys(scripts).forEach(k => {
+                if (k === oldKey) newScripts[newKey] = scripts[oldKey];
+                else newScripts[k] = scripts[k];
+            });
+            profile.scripts = newScripts;
+
+            // 2. 시퀀스 내 참조 업데이트
+            Object.values(profile.sequences).forEach(sequence => {
+                sequence.forEach(step => {
+                    if (step.type === 'text' && step.script === oldKey) {
+                        step.script = newKey;
+                    }
+                });
+            });
+
+            // 3. 보상 시퀀스 참조 업데이트 (레거시 필드)
+            if (profile.compensation === oldKey) {
+                profile.compensation = newKey;
+            }
+
+            renderAll();
+            showToast(`제목이 '${oldKey}'에서 '${newKey}'로 변경되었습니다.`, 'primary');
+        }
+
+        function updateScriptValue(key, value) {
+            appState.profiles[appState.activeProfile].scripts[key] = value;
+        }
+
+        function addNewScript() {
+            const profile = appState.profiles[appState.activeProfile];
+            const name = "새 스크립트_" + Date.now();
+            profile.scripts[name] = "내용을 입력하세요.";
+            renderAll();
+        }
+
+        function deleteScript(key) {
+            if (confirm(`'${key}' 스크립트를 삭제하시겠습니까?`)) {
+                delete appState.profiles[appState.activeProfile].scripts[key];
+                renderAll();
+            }
+        }
+
+        // --- Sequence Logic ---
+        let currentEditingSequence = null;
+        let imageFiles = [];
+
+        async function renderSequenceNav(profile) {
+            const nav = document.getElementById('sequenceNav');
+            nav.innerHTML = Object.keys(profile.sequences).map(name => `
+    <div class="nav-link ${currentEditingSequence === name ? 'active' : ''}"
+        style="color: #334155; padding: 12px; border-radius: 8px;" onclick="editSequence('${name}')">⚡ ${name}</div>
+    `).join('');
+
+            // 이미지 파일 목록 최신화
+            imageFiles = await window.electronAPI.getImageFiles();
+        }
+
+        async function editSequence(name) {
+            currentEditingSequence = name;
+            const profile = appState.profiles[appState.activeProfile];
+            const sequence = profile.sequences[name];
+            const area = document.getElementById('sequenceEditorArea');
+
+            area.innerHTML = `
+    <div class="title-row">
+        <input type="text" value="${name}" onchange="renameSequence('${name}', this.value)"
+            style="font-size:1.2rem; font-weight:700; width:auto; border:none; border-bottom:2px solid var(--primary);">
+        <button class="btn btn-danger" onclick="deleteSequence('${name}')">시퀀스 삭제</button>
+    </div>
+    <div id="stepArea">
+        ${sequence.map((step, i) => `
+        <div class="step-card" 
+             draggable="true" 
+             ondragstart="handleDragStart(event, ${i})" 
+             ondragover="handleDragOver(event)" 
+             ondrop="handleDrop(event, ${i})"
+             ondragend="handleDragEnd(event)"
+             onmouseover="updateLivePreview(${i})">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="cursor:grab; color:var(--text-muted); font-size:1.2rem;">⋮⋮</span>
+                    <span style="font-weight:700;">Step ${i + 1}</span>
+                </div>
+                <button onclick="removeStep(${i})"
+                    style="border:none; background:none; color:var(--danger); cursor:pointer;">삭제</button>
+            </div>
+            <div class="grid-2" style="margin-bottom:12px;">
+                <select onchange="updateStep(${i}, 'type', this.value)">
+                    <option value="text" ${step.type === 'text' ? 'selected' : ''}>텍스트(Script)</option>
+                    <option value="image" ${step.type === 'image' ? 'selected' : ''}>이미지(File)</option>
+                </select>
+                ${step.type === 'text'
+                    ? `<select onchange="updateStep(${i}, 'script', this.value)">
+                    <option value="">-- 스크립트 선택 --</option>
+                    ${Object.keys(profile.scripts).map(s => `<option value="${s}" ${step.script === s ? 'selected' : ''}>
+                        ${s}</option>`).join('')}
+                </select>`
+                    : `<div style="display:flex; gap:8px;">
+                    <select style="flex:1;" onchange="updateStep(${i}, 'file', this.value)">
+                        <option value="">-- 이미지 선택 --</option>
+                        ${(() => {
+                        const groups = {};
+                        imageFiles.forEach(f => {
+                            const parts = f.split('/');
+                            const fileName = parts.pop();
+                            const folder = parts.length > 0 ? parts.join('/') : '루트 디렉토리';
+                            if (!groups[folder]) groups[folder] = [];
+                            groups[folder].push({ path: f, name: fileName });
+                        });
+
+                        return Object.entries(groups).map(([folder, files]) => `
+                        <optgroup label="📂 ${folder}">
+                            ${files.map(file => `<option value="${file.path}" ${step.file === file.path ? 'selected' : ''
+                            }>${file.name}</option>`).join('')}
+                        </optgroup>
+                        `).join('');
+                    })()}
+                        <option value="VARIABLE" ${step.file && step.file.includes('{') ? 'selected' : ''}>⌨️ 변수 직접 입력
+                        </option>
+                    </select>
+                    ${(step.file && step.file.includes('{')) || (step.file === 'VARIABLE')
+                        ? `<input type="text" value="${step.file === 'VARIABLE' ? '' : step.file}" placeholder="{brand}.png"
+                        onchange="updateStep(${i}, 'file', this.value)" style="flex:1;">`
+                        : ''
+                    }
+                </div>`
+                }
+            </div>
+            <!-- Conditions UI -->
+            <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 5px;">
+                <div
+                    style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between;">
+                    <span>⚙️ 실행 조건 (선택 사항)</span>
+                    <button onclick="addCondition(${i})"
+                        style="font-size: 0.7rem; border: none; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; cursor: pointer;">+
+                        조건 추가</button>
+                </div>
+                ${(step.conditions || []).map((cond, ci) => `
+                <div style="display: flex; gap: 4px; margin-bottom: 4px; align-items: center;">
+                    <select style="flex:1; font-size: 0.8rem; padding: 4px;"
+                        onchange="updateCondition(${i}, ${ci}, 'field', this.value)">
+                        <option value="brand" ${cond.field === 'brand' ? 'selected' : ''}>브랜드</option>
+                        <option value="type" ${cond.field === 'type' ? 'selected' : ''}>전체 정보</option>
+                        <option value="useType" ${cond.field === 'useType' ? 'selected' : ''}>용도</option>
+                        <option value="quantity" ${cond.field === 'quantity' ? 'selected' : ''}>수량</option>
+                    </select>
+                    <select style="flex:1; font-size: 0.8rem; padding: 4px;"
+                        onchange="updateCondition(${i}, ${ci}, 'operator', this.value)">
+                        <option value="contains" ${cond.operator === 'contains' ? 'selected' : ''}>포함</option>
+                        <option value="equals" ${cond.operator === 'equals' ? 'selected' : ''}>일치</option>
+                        <option value="not_equals" ${cond.operator === 'not_equals' ? 'selected' : ''}>불일치</option>
+                    </select>
+                    ${cond.field === 'brand' || cond.field === 'type'
+                        ? `<select style="flex:1.5; font-size: 0.8rem; padding: 4px;"
+                        onchange="updateCondition(${i}, ${ci}, 'value', this.value)">
+                        <option value="">-- 선택 --</option>
+                        ${(cond.field === 'brand' ? brandOptions : typeOptions).map(opt => `
+                        <option value="${opt}" ${cond.value === opt ? 'selected' : ''}>${opt}</option>
+                        `).join('')}
+                        <option value="CUSTOM" ${!(cond.field === 'brand' ? brandOptions :
+                            typeOptions).includes(cond.value) && cond.value ? 'selected' : ''}>📝 직접 입력</option>
+                    </select>`
+                        : `<input type="text" value="${cond.value}" placeholder="값"
+                        style="flex:1.5; font-size: 0.8rem; padding: 4px;"
+                        onchange="updateCondition(${i}, ${ci}, 'value', this.value)">`
+                    }
+                    ${(!(cond.field === 'brand' ? brandOptions : typeOptions).includes(cond.value) && cond.value &&
+                        (cond.field === 'brand' || cond.field === 'type'))
+                        ? `<input type="text" value="${cond.value}" placeholder="직접 입력"
+                        style="flex:1.5; font-size: 0.8rem; padding: 4px;"
+                        onchange="updateCondition(${i}, ${ci}, 'value', this.value)">`
+                        : ''
+                    }
+                    <button onclick="removeCondition(${i}, ${ci})"
+                        style="border:none; background:none; color:var(--danger); cursor:pointer; font-size:0.8rem;">×</button>
+                </div>
+                `).join('')}
+            </div>
+        </div>
+        `).join('')}
+    </div>
+    <button class="btn btn-outline" style="width:100%;" onclick="addStep()">+ 스텝 추가</button>
+    `;
+            updateLivePreview();
+            renderSequenceNav(profile);
+        }
+
+        let dragSourceIndex = null;
+
+        function handleDragStart(e, index) {
+            dragSourceIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+            e.target.style.opacity = '0.5';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            document.querySelectorAll('.step-card').forEach(card => card.style.opacity = '1');
+            dragSourceIndex = null;
+        }
+
+        function handleDrop(e, targetIndex) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            // Reset opacity
+            document.querySelectorAll('.step-card').forEach(card => card.style.opacity = '1');
+
+            if (dragSourceIndex === null || dragSourceIndex === targetIndex) return;
+
+            const profile = appState.profiles[appState.activeProfile];
+            const sequence = profile.sequences[currentEditingSequence];
+
+            // Move item in array
+            const item = sequence.splice(dragSourceIndex, 1)[0];
+            sequence.splice(targetIndex, 0, item);
+
+            dragSourceIndex = null;
+            editSequence(currentEditingSequence);
+            return false;
+        }
+
+        function addCondition(i) {
+            const step = appState.profiles[appState.activeProfile].sequences[currentEditingSequence][i];
+            if (!step.conditions) step.conditions = [];
+            step.conditions.push({ field: 'brand', operator: 'contains', value: '' });
+            editSequence(currentEditingSequence);
+        }
+
+        function removeCondition(i, ci) {
+            appState.profiles[appState.activeProfile].sequences[currentEditingSequence][i].conditions.splice(ci, 1);
+            editSequence(currentEditingSequence);
+        }
+
+        function updateCondition(i, ci, field, value) {
+            appState.profiles[appState.activeProfile].sequences[currentEditingSequence][i].conditions[ci][field] = value;
+            updateLivePreview();
+        }
+
+        async function updateLivePreview(highlightIndex = -1) {
+            const previewArea = document.getElementById('livePreviewContent');
+            if (!currentEditingSequence) return;
+
+            const profile = appState.profiles[appState.activeProfile];
+            const sequence = profile.sequences[currentEditingSequence];
+
+            if (!sequence || sequence.length === 0) {
+                previewArea.innerHTML = '<div class="preview-empty">시퀀스가 비어 있습니다.</div>';
+                return;
+            }
+
+            // 가상 데이터 (미리보기용) - UI에서 직접 수정 가능하도록 확장 가능
+            const demoData = { brand: '삼성', type: '삼성 무풍 스탠드 에어컨', useType: '가정용', quantity: '1대' };
+            const config = await window.electronAPI.getConfig();
+            const imageDir = config.imageDir || 'images';
+
+            let previewHtml = '';
+
+            sequence.forEach((step, i) => {
+                // 조건 평가 (시뮬레이션)
+                let skip = false;
+                if (step.conditions && step.conditions.length > 0) {
+                    skip = !step.conditions.every(cond => {
+                        let fieldValue = '';
+                        if (cond.field === 'brand') fieldValue = demoData.brand;
+                        else if (cond.field === 'type') fieldValue = demoData.type;
+                        else if (cond.field === 'useType') fieldValue = demoData.useType;
+                        else if (cond.field === 'quantity') fieldValue = demoData.quantity;
+
+                        if (cond.operator === 'equals') return fieldValue === cond.value;
+                        if (cond.operator === 'not_equals') return fieldValue !== cond.value;
+                        if (cond.operator === 'contains') return fieldValue.includes(cond.value);
+                        return true;
+                    });
+                }
+
+                if (skip) return;
+
+                const isHighlighted = i === highlightIndex;
+                const style = isHighlighted ? 'border: 2px solid var(--primary);' : '';
+
+                if (step.type === 'text') {
+                    let content = profile.scripts[step.script] || '(내용 없음)';
+                    content = content.replace(/{brand}/g, demoData.brand).replace(/{type}/g, demoData.type).replace(/{quantity}/g,
+                        demoData.quantity);
+                    previewHtml += `
+    <div class="preview-message" style="${style}">
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:4px;">[Text] ${step.script || ''}</div>
+        ${content}
+    </div>
+    `;
+                } else {
+                    let fileName = step.file || '';
+                    let resolvedName = fileName.replace(/{brand}/g, demoData.brand).replace(/{type}/g, demoData.type);
+
+                    previewHtml += `
+    <div class="preview-image-container" style="${style} margin-bottom:16px;">
+        <div
+            style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.5); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; z-index:10;">
+            [Image] ${resolvedName}</div>
+        <img src="file:///${imageDir.replace(/\\/g, '/')}/${resolvedName}"
+            onerror="this.parentElement.innerHTML='<div class=\'preview-empty\'>이미지 미리보기 불가<br>(${resolvedName})</div>'">
+    </div>
+    `;
+                }
+            });
+
+            previewArea.innerHTML = previewHtml || '<div class="preview-empty">현재 조건에 맞는 스텝이 없습니다.</div>';
+        }
+
+        function addStep() {
+            const profile = appState.profiles[appState.activeProfile];
+            profile.sequences[currentEditingSequence].push({ type: 'text', script: Object.keys(profile.scripts)[0] });
+            editSequence(currentEditingSequence);
+        }
+
+        function removeStep(i) {
+            appState.profiles[appState.activeProfile].sequences[currentEditingSequence].splice(i, 1);
+            editSequence(currentEditingSequence);
+        }
+
+        function updateStep(i, field, value) {
+            const step = appState.profiles[appState.activeProfile].sequences[currentEditingSequence][i];
+            step[field] = value;
+            if (field === 'type') {
+                if (value === 'text') {
+                    delete step.file;
+                    step.script = Object.keys(appState.profiles[appState.activeProfile].scripts)[0] || "";
+                } else {
+                    delete step.script;
+                    step.file = imageFiles[0] || "";
+                }
+            }
+            editSequence(currentEditingSequence);
+        }
+
+        function addNewSequence() {
+            const name = "새_시퀀스_" + Date.now();
+            appState.profiles[appState.activeProfile].sequences[name] = [];
+            currentEditingSequence = name;
+            renderAll();
+            editSequence(name);
+        }
+
+        function deleteSequence(name) {
+            if (confirm("정말 삭제하시겠습니까?")) {
+                delete appState.profiles[appState.activeProfile].sequences[name];
+                currentEditingSequence = null;
+                renderAll();
+                document.getElementById('sequenceEditorArea').innerHTML = `
+                    <div style="color: var(--text-muted); text-align: center; padding: 100px;">좌측 시퀀스를 선택하세요.</div>
+                `;
+                document.getElementById('livePreviewContent').innerHTML = `
+                    <div class="preview-empty">시퀀스를 선택하세요.</div>
+                `;
+            }
+        }
+
+        function renameSequence(oldName, newName) {
+            if (oldName === newName) return;
+            const seqs = appState.profiles[appState.activeProfile].sequences;
+            seqs[newName] = seqs[oldName];
+            delete seqs[oldName];
+            currentEditingSequence = newName;
+            renderAll();
+            editSequence(newName);
+        }
+
+        // --- Rules Logic ---
+        function renderRules(profile) {
+            const area = document.getElementById('ruleListArea');
+            area.innerHTML = `
+    <table style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr style="text-align:left; border-bottom:1px solid var(--border);">
+                <th style="padding:12px;">감지 키워드 (타입/브랜드 등)</th>
+                <th style="padding:12px;">연결된 시퀀스</th>
+                <th style="padding:12px;">액션</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${profile.rules.map((rule, i) => `
+            <tr>
+                <td style="padding:12px;">
+                    <input type="text" value="${rule.keywords.join(', ')}"
+                        onchange="updateRuleKeywords(${i}, this.value)" style="border:none;">
+                </td>
+                <td style="padding:12px;">
+                    <select onchange="updateRuleTarget(${i}, this.value)">
+                        ${Object.keys(profile.sequences).map(s => `<option value="${s}" ${rule.target === s ? 'selected'
+                : ''}>${s}</option>`).join('')}
+                    </select>
+                </td>
+                <td style="padding:12px;">
+                    <button class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem;"
+                        onclick="deleteRule(${i})">삭제</button>
+                </td>
+            </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    `;
+        }
+
+        function updateRuleKeywords(i, val) {
+            appState.profiles[appState.activeProfile].rules[i].keywords = val.split(',').map(k => k.trim()).filter(k => k);
+        }
+
+        function updateRuleTarget(i, val) {
+            appState.profiles[appState.activeProfile].rules[i].target = val;
+        }
+
+        function addNewRule() {
+            appState.profiles[appState.activeProfile].rules.push({
+                keywords: ["키워드"], target:
+                    Object.keys(appState.profiles[appState.activeProfile].sequences)[0]
+            });
+            renderAll();
+        }
+
+        function deleteRule(i) {
+            appState.profiles[appState.activeProfile].rules.splice(i, 1);
+            renderAll();
+        }
+
+        // --- System Logic ---
+        async function saveAll() {
+            const res = await window.electronAPI.saveTemplates(appState);
+            if (res.success) alert("모든 설정이 성공적으로 저장되었습니다.");
+            else alert("저장 실패: " + res.message);
+        }
+
+        async function toggleBot() {
+            const btn = document.getElementById('toggleBtn');
+            const indicator = document.getElementById('statusIndicator');
+
+            if (isRunning) {
+                await window.electronAPI.stopBot();
+                btn.innerText = "서비스 시작";
+                btn.className = "btn btn-primary";
+                indicator.style.color = "var(--text-muted)";
+                indicator.innerText = "● 서비스 중지됨";
+                isRunning = false;
+            } else {
+                await window.electronAPI.startBot();
+                btn.innerText = "서비스 정지";
+                btn.className = "btn btn-danger";
+                indicator.style.color = "#10b981";
+                indicator.innerText = "● 서비스 가동 중";
+                isRunning = true;
+            }
+        }
+
+        function startLogPolling() {
+            const body = document.getElementById('logTableBody');
+            setInterval(async () => {
+                const logs = await window.electronAPI.getLogs();
+                body.innerHTML = logs.map(log => `
+    <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 12px; color: var(--text-muted); font-size:0.85rem;">${new
+                        Date(log.timestamp).toLocaleTimeString()}</td>
+        <td style="padding: 12px; font-weight: 700;">${log.customerName}</td>
+        <td style="padding: 12px;"><span
+                style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-size:0.75rem;">${log.type}</span>
+        </td>
+        <td style="padding: 12px; font-size:0.9rem;">${log.message}</td>
+    </tr>
+    `).join('');
+            }, 5000);
+        }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('passwordInput');
+            if (input.type === 'password') input.type = 'text';
+            else input.type = 'password';
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

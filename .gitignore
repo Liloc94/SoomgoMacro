@@ -1,0 +1,11 @@
+node_modules/
+release/
+dist/
+build/
+logs/
+*.exe
+*.log
+.DS_Store
+Thumbs.db
+processed_chats.json
+config.json

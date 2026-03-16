@@ -1,0 +1,46 @@
+{
+  "name": "soomgo-macro",
+  "version": "1.0.0",
+  "description": "숨고 채팅 자동화 매크로 애플리케이션",
+  "author": "White Clinic",
+  "license": "MIT",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "tsc",
+    "dev": "chcp 65001 && tsc && electron .",
+    "package": "npm run build && npx electron-builder"
+  },
+  "build": {
+    "appId": "com.whiteclinic.soomgo-macro",
+    "productName": "숨고매크로",
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "build/icon.png",
+      "forceCodeSigning": false
+    },
+    "files": [
+      "dist/**/*",
+      "src/index.html",
+      "package.json",
+      "templates.json",
+      "config.json"
+    ],
+    "directories": {
+      "output": "release"
+    }
+  },
+  "dependencies": {
+    "playwright": "^1.58.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "electron": "^41.0.1",
+    "electron-builder": "^26.8.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
