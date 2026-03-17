@@ -352,7 +352,15 @@ export class SoomgoBotService {
 
     async getPreview(data: ExtractionData) {
         const details = this.engine.getAutomationDetails(data);
-        const baseDir = this.config?.imageDir || path.join(this.userDataPath, 'images');
+        
+        // 이미지 기본 경로 결정
+        let baseDir = this.config?.imageDir || path.join(this.userDataPath, 'images');
+        if (!this.config?.imageDir) {
+            const localImagesPath = path.join(process.cwd(), 'images');
+            if (fs.existsSync(localImagesPath)) {
+                baseDir = localImagesPath;
+            }
+        }
 
         let previewMessage = '';
         let previewImagePath = '이미지 없음';

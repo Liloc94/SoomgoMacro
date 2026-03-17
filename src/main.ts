@@ -166,14 +166,41 @@ ipcMain.handle('save-templates', async (event, newTemplates) => {
     }
 });
 
+// 이미지 디렉토리 경로 결정 헬퍼
+function getImageDir(): string {
+    let imageDir = path.join(userDataPath, 'images');
+    
+    // 1. config.json 확인
+    if (fs.existsSync(configPath)) {
+        try {
+            const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            if (config.imageDir) return config.imageDir;
+        } catch (e) {}
+    }
+    
+    // 2. 프로젝트 로컬 images 폴더 확인 (개발/포터블 환경)
+    const localImagesPath = path.join(process.cwd(), 'images');
+    if (fs.existsSync(localImagesPath)) {
+        return localImagesPath;
+    }
+    
+    return imageDir;
+}
+
 // 설정 정보 가져오기 (이메일 등)
 ipcMain.handle('get-config', async () => {
     try {
+        let config: any = {};
         if (fs.existsSync(configPath)) {
-            return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
         }
+        // 실제로 사용 중인 이미지 디렉토리 정보를 함께 전달
+        return {
+            ...config,
+            imageDir: config.imageDir || getImageDir()
+        };
     } catch (e) { }
-    return {};
+    return { imageDir: getImageDir() };
 });
 
 // 설정 업데이트
@@ -202,12 +229,7 @@ ipcMain.on('save-credentials', (event, creds) => {
 // 이미지 파일 목록 가져오기 (재귀적)
 ipcMain.handle('get-image-files', async () => {
     try {
-        let imageDir = path.join(userDataPath, 'images');
-
-        if (fs.existsSync(configPath)) {
-            const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            if (config.imageDir) imageDir = config.imageDir;
-        }
+        const imageDir = getImageDir();
 
         if (!fs.existsSync(imageDir)) {
             fs.mkdirSync(imageDir, { recursive: true });
