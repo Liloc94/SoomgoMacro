@@ -67,7 +67,7 @@ export class TemplateEngine {
             if (fs.existsSync(this.templatesPath)) {
                 const fileData = fs.readFileSync(this.templatesPath, 'utf8');
                 this.config = JSON.parse(fileData);
-                
+
                 // 단일 사용자 환경: 첫 번째 프로필을 최우선으로 사용
                 const profileNames = Object.keys(this.config.profiles || {});
                 if (profileNames.length > 0) {
@@ -75,7 +75,7 @@ export class TemplateEngine {
                 } else {
                     this.activeProfileName = '기본설정';
                 }
-                
+
                 console.log(`✅ 템플릿 엔진 로드 완료 (활성 프로필: ${this.activeProfileName})`);
             } else {
                 console.warn('⚠️ 템플릿 파일을 찾을 수 없습니다:', this.templatesPath);
@@ -87,11 +87,11 @@ export class TemplateEngine {
 
     private getActiveProfile() {
         if (!this.config.profiles) this.config.profiles = {};
-        
+
         // 지정된 프로필이 없으면 첫 번째 프로필 반환
         const active = this.config.profiles[this.activeProfileName];
         if (active) return active;
-        
+
         const firstProfile = Object.values(this.config.profiles)[0];
         return firstProfile || null;
     }
@@ -100,19 +100,17 @@ export class TemplateEngine {
      * 브랜드명을 표준화합니다.
      */
     private normalizeBrand(brand: string): string {
+        // (괄호) 이전의 텍스트만 추출하여 정리
         const brandMatch = brand.match(/^([^(]+)/);
-        const clean = (brandMatch ? brandMatch[1] : brand).trim().replace(/[/\\?%*:|"<>]/g, '');
+        const clean = (brandMatch ? brandMatch[1] : brand).trim().toLowerCase();
 
-        const brandMap: Record<string, string> = {
-            '삼성': '삼성전자',
-            '엘지': 'LG전자',
-            'lg': 'LG전자',
-            '위니아': '위니아전자',
-            '대우': '대우전자',
-            '캐리어': '캐리어'
-        };
+        // 부분 일치 검사를 통한 표준화
+        if (clean.includes('삼성') || clean.includes('SAMSUNG')) return '삼성전자';
+        if (clean.includes('엘지') || clean.includes('lg')) return 'LG전자';
+        if (clean.includes('위니아') || clean.includes('대우') || clean.includes('캐리어')) return '기타 / 알 수 없음';
 
-        return brandMap[clean] || brandMap[clean.toLowerCase()] || clean;
+        // 매칭되는 게 없으면 특수문자만 제거하여 반환
+        return clean.replace(/[/\\?%*:|"<>]/g, '').trim();
     }
 
     /**
@@ -124,9 +122,14 @@ export class TemplateEngine {
         const profile = this.getActiveProfile();
         const rules = profile?.triggerRules || [];
 
+        // 동일 타겟에 대해 여러 블록이 있을 경우를 대비하여 filter + flatMap 사용
+        const getKeywords = (target: string) =>
+            rules.filter((r: any) => r.target === target)
+                .flatMap((r: any) => r.keywords || []);
+
         return {
-            newChatKeywords: rules.find((r: any) => r.target === '__AUTO__')?.keywords || [],
-            compensationKeywords: rules.find((r: any) => r.target === '미접속_보상_시퀀스')?.keywords || []
+            newChatKeywords: getKeywords('__AUTO__'),
+            compensationKeywords: getKeywords('미접속_보상_시퀀스')
         };
     }
 

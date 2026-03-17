@@ -37,7 +37,7 @@ export class SoomgoBotService {
     private isAutomationProcessing: boolean = false;
     private currentProcessingChatId: string | null = null;
     private processedChatIds: Set<string> = new Set();
-    
+
     private get userDataPath() {
         return require('electron').app.getPath('userData');
     }
@@ -71,6 +71,16 @@ export class SoomgoBotService {
         }
 
         this.isRunning = true;
+
+        // [추가] 시작 시점에 최신 설정 강제 로드
+        try {
+            if (fs.existsSync(this.configPath)) {
+                this.config = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
+                console.log('✅ 설정 파일을 성공적으로 로드했습니다.');
+            }
+        } catch (e) {
+            console.error('❌ 설정 로드 실패:', e);
+        }
 
         try {
             const launchOptions = {
@@ -139,7 +149,10 @@ export class SoomgoBotService {
                     try {
                         console.log(`🚀 [신규 견적] 자동 응답 실행 시작 (Chat ID: ${chatId})`);
                         await this.automation!.runAutomation(data);
+
+                        // [핵심] 자동화 완료 시점에만 마킹 (기록)
                         this.markChatAsProcessed(chatId);
+                        this.monitor?.markChatAsProcessed(chatId); // 모니터 메모리에도 즉시 반영
 
                         const details = this.engine.getAutomationDetails(data);
                         await this.logger.addLog({
@@ -171,6 +184,7 @@ export class SoomgoBotService {
 
                     // [중요] 처리 시작 직후 마킹하여 handleReceivedRequest 콜백 중복 실행 방지
                     this.markChatAsProcessed(chatId);
+                    this.monitor?.markChatAsProcessed(chatId);
 
                     try {
                         console.log(`🚀 [보상] 페이지 이동 및 리마인드 전송 (Chat ID: ${chatId})`);
@@ -332,6 +346,12 @@ export class SoomgoBotService {
         if (newConfig.safeMode !== undefined) {
             await this.setupSafeMode(newConfig.safeMode);
         }
+
+        // [중요] 자동화 엔진의 이미지 경로를 실시간 동기화
+        if (newConfig.imageDir) {
+            this.automation?.setImageDir(newConfig.imageDir);
+        }
+
         if (newConfig.refreshInterval !== undefined) {
             this.refreshInterval = newConfig.refreshInterval;
         }
@@ -343,7 +363,30 @@ export class SoomgoBotService {
             }
         }
 
+        // [추가] 설정 저장 시 트리거 키워드 실시간 갱신
+        if (this.monitor) {
+            const triggerRules = this.engine.getTriggerRules();
+            this.monitor.updateKeywords(
+                triggerRules.newChatKeywords,
+                triggerRules.compensationKeywords
+            );
+        }
+
         console.log(`📂 설정 업데이트 완료 (새로고침: ${this.isRefreshEnabled ? 'ON' : 'OFF'}, ${this.refreshInterval}초)`);
+    }
+
+    /**
+     * 템플릿 파일로부터 트리거 키워드를 즉시 다시 읽어와 업데이트합니다.
+     */
+    public refreshTriggers() {
+        if (!this.monitor) return;
+        
+        const triggerRules = this.engine.getTriggerRules();
+        this.monitor.updateKeywords(
+            triggerRules.newChatKeywords,
+            triggerRules.compensationKeywords
+        );
+        console.log('🎯 트리거 키워드가 템플릿 파일에서 즉시 동기화되었습니다.');
     }
 
     // ==========================================
@@ -352,7 +395,7 @@ export class SoomgoBotService {
 
     async getPreview(data: ExtractionData) {
         const details = this.engine.getAutomationDetails(data);
-        
+
         // 이미지 기본 경로 결정
         let baseDir = this.config?.imageDir || path.join(this.userDataPath, 'images');
         if (!this.config?.imageDir) {
@@ -441,8 +484,8 @@ export class SoomgoBotService {
         if (this.refreshTimer) clearTimeout(this.refreshTimer);
 
         const baseInterval = this.refreshInterval * 1000;
-        const jitter = (Math.random() - 0.5) * 4000;
-        const delay = Math.max(15000, baseInterval + jitter);
+        const jitter = (Math.random() - 0.5) * 2000; // 지터 범위를 약간 줄여 정확도 향상
+        const delay = Math.max(7000, baseInterval + jitter);
 
         this.refreshTimer = setTimeout(async () => {
             if (!this.isRefreshEnabled) return;

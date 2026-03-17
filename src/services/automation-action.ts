@@ -15,6 +15,11 @@ export class AutomationAction {
         private imageDir?: string
     ) { }
 
+    setImageDir(dir: string) {
+        this.imageDir = dir;
+        console.log(`📸 이미지 전송 경로가 설정되었습니다: ${dir}`);
+    }
+
     setSafeMode(enabled: boolean) {
         this.isSafeMode = enabled;
     }
@@ -52,8 +57,8 @@ export class AutomationAction {
         console.log(`🚀 [시퀀스 시작] 명칭: ${details.targetSequenceName}`);
 
         for (const step of details.sequence) {
-            // 인간미 있는 딜레이 추가 (1~3초 랜덤)
-            const randomDelay = Math.floor(Math.random() * (3000 - 1000 + 1)) + 1000;
+            // 인간미 있는 딜레이 추가 (0.1~0.5초 랜덤)
+            const randomDelay = Math.floor(Math.random() * (500 - 100 + 1)) + 100;
             console.log(`⏳ 다음 동작 대기 중... (${(randomDelay / 1000).toFixed(1)}초)`);
             await this.page.waitForTimeout(randomDelay);
 
@@ -93,8 +98,10 @@ export class AutomationAction {
         }
 
         if (fs.existsSync(finalPath)) {
-            console.log(`📸 이미지 첨부: ${finalFileName}`);
+            console.log(`📸 이미지 첨부: ${finalPath}`);
             await this.page.setInputFiles('input[type="file"]', finalPath);
+            // [중요] 업로드 후 브라우저 처리 대기 (안정화 시간 대폭 강화)
+            await this.page.waitForTimeout(1500);
         } else {
             console.warn(`⚠️ 이미지를 찾을 수 없음: ${finalPath}`);
         }

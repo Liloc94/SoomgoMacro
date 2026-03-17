@@ -12,31 +12,34 @@ const isDev = !app.isPackaged;
 const userDataPath = app.getPath('userData');
 
 function getSafePath(filename: string): string {
-    const destPath = path.join(userDataPath, filename);
-
-    // 유저 데이터 폴더에 파일이 없으면 앱 패키지 내부에서 복사해옴
-    if (!fs.existsSync(destPath)) {
-        try {
-            // app.getAppPath()는 패키징 후 asar 내부의 경로를 가리킵니다.
-            const srcPath = isDev
-                ? path.join(process.cwd(), filename)
-                : path.join(app.getAppPath(), filename);
-
-            if (fs.existsSync(srcPath)) {
-                fs.copyFileSync(srcPath, destPath);
-                console.log(`✅ ${filename} 초기 데이터를 내부에서 복사했습니다: ${destPath}`);
-            } else {
-                // 원본도 없는 경우 기본값으로 생성
-                const defaultContent = filename === 'templates.json'
-                    ? { activeProfile: '기본설정', profiles: { '기본설정': { triggerRules: [], rules: [], sequences: {}, scripts: {} } } }
-                    : {};
-                fs.writeFileSync(destPath, JSON.stringify(defaultContent, null, 4));
-                console.log(`✅ ${filename} 기본값을 새로 생성했습니다: ${destPath}`);
-            }
-        } catch (e) {
-            console.error(`❌ ${filename} 초기화 실패:`, e);
-        }
+    // 1. 개발 모드: 프로젝트 루트 폴더의 파일을 직접 사용
+    if (isDev) {
+        const projectPath = path.join(process.cwd(), filename);
+        console.log(`🛠️ [개발 모드] 프로젝트 파일을 사용합니다: ${projectPath}`);
+        return projectPath;
     }
+
+    // 2. 배포 모드: AppData 폴더를 사용
+    const destPath = path.join(userDataPath, filename);
+    const exeDir = path.dirname(app.getPath('exe'));
+    const srcPath = path.join(exeDir, filename);
+
+    try {
+        // AppData에 파일이 없고 실행 파일 옆에 원본이 있을 때만 복사 (최초 1회)
+        if (!fs.existsSync(destPath) && fs.existsSync(srcPath)) {
+            fs.copyFileSync(srcPath, destPath);
+            console.log(`🚚 [배포판] 초기 데이터를 복사했습니다: ${destPath}`);
+        } 
+        // 둘 다 없는데 templates.json인 경우만 기본값 생성
+        else if (!fs.existsSync(destPath) && filename === 'templates.json') {
+             const defaultContent = { activeProfile: '기본설정', profiles: { '기본설정': { triggerRules: [], rules: [], sequences: {}, scripts: {} } } };
+             fs.writeFileSync(destPath, JSON.stringify(defaultContent, null, 4));
+             console.log(`✅ [배포판] templates.json 기본값을 생성했습니다.`);
+        }
+    } catch (e) {
+        console.error(`❌ ${filename} 경로 처리 실패:`, e);
+    }
+
     return destPath;
 }
 
@@ -161,7 +164,12 @@ ipcMain.handle('get-templates', async () => {
 ipcMain.handle('save-templates', async (event, newTemplates) => {
     try {
         fs.writeFileSync(templatesPath, JSON.stringify(newTemplates, null, 4));
-        // 엔진에도 즉시 리로드 지시 (getAutomationDetails 내에서 이미 로드하긴 함)
+        
+        // [핵심] 실행 중인 봇이 있다면 트리거 키워드 즉시 갱신
+        if (botService) {
+            botService.refreshTriggers();
+        }
+        
         console.log('✅ 템플릿 저장 및 엔진 동기화 완료');
         return { success: true };
     } catch (e: any) {

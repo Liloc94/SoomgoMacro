@@ -85,8 +85,12 @@ export class NetworkMonitor {
                 const lastMessage: string = chat.last_message || '';
                 const customerName: string = chat.user?.name || '고객';
 
-                // 이미 처리된 채팅방 스킵
+                // 이미 처리 완료된 채팅방(파일 기록된 것) 스킵
                 if (this.processedChatIds.has(chatId)) continue;
+                
+                // 현재 해당 채팅방으로 이동 중이거나 이미 처리 대기 중인 경우 무시 (새치기 방지)
+                const currentUrl = this.page.url();
+                if (currentUrl.includes(`/chats/${chatId}`)) continue;
 
                 // 계약 완료된 채팅방은 건드리지 않음
                 if (chat.quote?.is_hired) continue;
@@ -99,15 +103,20 @@ export class NetworkMonitor {
 
                 if (isNewChat) {
                     console.log(`✨ 신규 견적 감지 (Chat ID: ${chatId}, Customer: ${customerName})`);
-                    this.processedChatIds.add(chatId);
-                    // 채팅방으로 이동 → framenavigated 이벤트 → onPageNavigated 콜백
-                    // → handleReceivedRequest에서 고객정보 추출 후 자동 응답
+                    // [변경] 여기서 바로 마킹하지 않고 입장 성공 시에만 마킹함
+                    
+                    // 채팅방으로 이동 시도
                     await this.navigateToChat(chatId, 'new');
+                    
+                    // 한 번에 한 번의 이동만 수행 (여러 개가 동시에 오면 다음 새로고침 때 처리)
+                    return; 
 
                 } else if (isCompensation) {
                     console.log(`💡 미접속 보상 감지 (Chat ID: ${chatId}, Customer: ${customerName})`);
-                    this.processedChatIds.add(chatId);
+                    // 보상의 경우 입장이 아닌 즉시 메시지 전송이므로 여기서 마킹 유지하거나
+                    // onCompensation 내부에서 처리하도록 위임
                     await this.onCompensation(chatId, customerName);
+                    return;
                 }
             }
         } catch (e: any) {
@@ -190,5 +199,14 @@ export class NetworkMonitor {
      */
     public markChatAsProcessed(chatId: string) {
         this.processedChatIds.add(chatId);
+    }
+
+    /**
+     * 감시할 트리거 키워드를 실시간으로 업데이트합니다.
+     */
+    public updateKeywords(newChatKeywords: string[], compensationKeywords: string[]) {
+        this.newChatKeywords = newChatKeywords;
+        this.compensationKeywords = compensationKeywords;
+        console.log('🔄 트리거 키워드가 실시간으로 업데이트되었습니다.');
     }
 }

@@ -379,7 +379,8 @@
                 <div class="grid-2">
                     <div class="card">
                         <div class="section-title">최근 실행 요약</div>
-                        <div style="font-size: 2.5rem; font-weight: 800; margin-top:20px;"><span id="todayCountDisplay">0</span> <small
+                        <div style="font-size: 2.5rem; font-weight: 800; margin-top:20px;"><span
+                                id="todayCountDisplay">0</span> <small
                                 style="font-size:1rem; color:var(--text-muted);">건</small></div>
                     </div>
                 </div>
@@ -544,7 +545,7 @@
 
         async function init() {
             appState = await window.electronAPI.getTemplates();
-            
+
             // 데이터가 있는 경우 활성 프로필 강제 지정 (UI 단순화를 위해)
             if (appState && appState.profiles) {
                 if (!appState.activeProfile || !appState.profiles[appState.activeProfile]) {
@@ -583,10 +584,10 @@
             try {
                 const logs = await window.electronAPI.getLogs();
                 if (!Array.isArray(logs)) return;
-                
+
                 const today = new Date().toDateString();
                 const todayLogs = logs.filter(log => log && log.timestamp && new Date(log.timestamp).toDateString() === today);
-                
+
                 const display = document.getElementById('todayCountDisplay');
                 if (display) display.innerText = todayLogs.length;
             } catch (e) {
@@ -703,7 +704,7 @@
                 console.warn("표시할 데이터가 없습니다.");
                 return;
             }
-            
+
             const profile = appState.profiles[appState.activeProfile];
             if (!profile) return;
 
