@@ -379,7 +379,7 @@
                 <div class="grid-2">
                     <div class="card">
                         <div class="section-title">최근 실행 요약</div>
-                        <div style="font-size: 2.5rem; font-weight: 800; margin-top:20px;">0 <small
+                        <div style="font-size: 2.5rem; font-weight: 800; margin-top:20px;"><span id="todayCountDisplay">0</span> <small
                                 style="font-size:1rem; color:var(--text-muted);">건</small></div>
                     </div>
                 </div>
@@ -544,6 +544,14 @@
 
         async function init() {
             appState = await window.electronAPI.getTemplates();
+            
+            // 데이터가 있는 경우 활성 프로필 강제 지정 (UI 단순화를 위해)
+            if (appState && appState.profiles) {
+                if (!appState.activeProfile || !appState.profiles[appState.activeProfile]) {
+                    appState.activeProfile = Object.keys(appState.profiles)[0] || null;
+                }
+            }
+
             const config = await window.electronAPI.getConfig();
 
             // 시스템 설정 UI 초기화
@@ -567,7 +575,23 @@
             });
 
             renderAll();
+            updateTodayCount(); // 초기 카운트 표시
             startLogPolling();
+        }
+
+        async function updateTodayCount() {
+            try {
+                const logs = await window.electronAPI.getLogs();
+                if (!Array.isArray(logs)) return;
+                
+                const today = new Date().toDateString();
+                const todayLogs = logs.filter(log => log && log.timestamp && new Date(log.timestamp).toDateString() === today);
+                
+                const display = document.getElementById('todayCountDisplay');
+                if (display) display.innerText = todayLogs.length;
+            } catch (e) {
+                console.error("카운트 업데이트 실패:", e);
+            }
         }
 
         function showToast(message, type = 'primary') {
@@ -675,25 +699,13 @@
         }
 
         function renderAll() {
-            if (!appState || !appState.profiles) return;
-            
-            const profile = appState.profiles[appState.activeProfile];
-            
-            if (!profile) {
-                // 프로필이 없는 경우 (첫 실행 등) 안내 표시
-                document.querySelectorAll('.tab-pane').forEach(p => {
-                    if (p.id !== 'dashboardTab') {
-                        p.innerHTML = `
-                        <div class="card" style="text-align:center; padding: 80px; color:var(--text-muted);">
-                            <div style="font-size: 3rem; margin-bottom: 20px;">👤</div>
-                            <h3>프로필이 없습니다</h3>
-                            <p style="margin-bottom: 24px;">왼쪽 사이드바의 [+] 버튼을 눌러 새 프로필을 만들어보세요.</p>
-                            <button class="btn btn-primary" onclick="addNewProfile()" style="margin: 0 auto;">첫 프로필 추가하기</button>
-                        </div>`;
-                    }
-                });
+            if (!appState || !appState.profiles || !appState.activeProfile) {
+                console.warn("표시할 데이터가 없습니다.");
                 return;
             }
+            
+            const profile = appState.profiles[appState.activeProfile];
+            if (!profile) return;
 
             renderTriggerRules(profile);
             renderScripts(profile);
@@ -1288,6 +1300,12 @@
             const body = document.getElementById('logTableBody');
             setInterval(async () => {
                 const logs = await window.electronAPI.getLogs();
+                // 요약 카운트 업데이트
+                const today = new Date().toDateString();
+                const todayLogs = logs.filter(log => new Date(log.timestamp).toDateString() === today);
+                const display = document.getElementById('todayCountDisplay');
+                if (display) display.innerText = todayLogs.length;
+
                 body.innerHTML = logs.map(log => `
     <tr style="border-bottom: 1px solid #f1f5f9;">
         <td style="padding: 12px; color: var(--text-muted); font-size:0.85rem;">${new

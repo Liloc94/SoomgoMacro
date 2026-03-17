@@ -13,21 +13,25 @@ const userDataPath = app.getPath('userData');
 
 function getSafePath(filename: string): string {
     const destPath = path.join(userDataPath, filename);
-    
-    // 개발 모드가 아니고, 파일이 유저 데이터 폴더에 없으면 앱 실행 폴더나 리소스 폴더에서 복사
+
+    // 유저 데이터 폴더에 파일이 없으면 앱 패키지 내부에서 복사해옴
     if (!fs.existsSync(destPath)) {
         try {
-            const srcPath = isDev 
+            // app.getAppPath()는 패키징 후 asar 내부의 경로를 가리킵니다.
+            const srcPath = isDev
                 ? path.join(process.cwd(), filename)
-                : path.join(process.resourcesPath, 'app', filename);
-            
+                : path.join(app.getAppPath(), filename);
+
             if (fs.existsSync(srcPath)) {
                 fs.copyFileSync(srcPath, destPath);
-                console.log(`✅ ${filename} copied to UserData: ${destPath}`);
-            } else if (filename.endsWith('.json')) {
+                console.log(`✅ ${filename} 초기 데이터를 내부에서 복사했습니다: ${destPath}`);
+            } else {
                 // 원본도 없는 경우 기본값으로 생성
-                fs.writeFileSync(destPath, JSON.stringify(filename === 'templates.json' ? { activeProfile: null, profiles: {} } : {}, null, 4));
-                console.log(`✅ ${filename} created with default values at: ${destPath}`);
+                const defaultContent = filename === 'templates.json'
+                    ? { activeProfile: '기본설정', profiles: { '기본설정': { triggerRules: [], rules: [], sequences: {}, scripts: {} } } }
+                    : {};
+                fs.writeFileSync(destPath, JSON.stringify(defaultContent, null, 4));
+                console.log(`✅ ${filename} 기본값을 새로 생성했습니다: ${destPath}`);
             }
         } catch (e) {
             console.error(`❌ ${filename} 초기화 실패:`, e);
@@ -58,7 +62,7 @@ async function createWindow() {
     // index.html 로드
     // dist/main.js 에서 ../src/index.html 을 바라봐야 함 (개발/운영 공통)
     const indexPath = path.join(__dirname, '..', 'src', 'index.html');
-    
+
     if (fs.existsSync(indexPath)) {
         mainWindow.loadFile(indexPath);
     } else {
@@ -68,7 +72,7 @@ async function createWindow() {
             path.join(process.resourcesPath, 'app', 'src', 'index.html'),
             path.join(app.getAppPath(), 'src', 'index.html')
         ];
-        
+
         let loaded = false;
         for (const fallback of fallbacks) {
             if (fs.existsSync(fallback)) {
@@ -78,7 +82,7 @@ async function createWindow() {
                 break;
             }
         }
-        
+
         if (!loaded) {
             console.error('❌ index.html을 찾을 수 없습니다.');
             // 파일이 정 없으면 에러 메시지라도 띄우기 위해 loadURL 사용 가능 (선택적)
@@ -169,21 +173,21 @@ ipcMain.handle('save-templates', async (event, newTemplates) => {
 // 이미지 디렉토리 경로 결정 헬퍼
 function getImageDir(): string {
     let imageDir = path.join(userDataPath, 'images');
-    
+
     // 1. config.json 확인
     if (fs.existsSync(configPath)) {
         try {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
             if (config.imageDir) return config.imageDir;
-        } catch (e) {}
+        } catch (e) { }
     }
-    
+
     // 2. 프로젝트 로컬 images 폴더 확인 (개발/포터블 환경)
     const localImagesPath = path.join(process.cwd(), 'images');
     if (fs.existsSync(localImagesPath)) {
         return localImagesPath;
     }
-    
+
     return imageDir;
 }
 
