@@ -14,8 +14,8 @@ export class LoggerService {
     private logFilePath: string;
 
     constructor() {
-        this.logDir = path.resolve(process.cwd(), 'logs');
-        this.logFilePath = path.resolve(this.logDir, 'automation_history.json');
+        this.logDir = path.join(require('electron').app.getPath('userData'), 'logs');
+        this.logFilePath = path.join(this.logDir, 'automation_history.json');
         this.init();
         this.cleanupOldLogs();
     }

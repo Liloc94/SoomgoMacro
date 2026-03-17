@@ -355,11 +355,9 @@
         <div class="nav-link" onclick="switchTab('rules')">⚖️ 매칭 규칙</div>
 
         <div style="margin-top: auto; padding: 20px 32px; border-top: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between;">
-                <span>활성 프로필</span>
-                <span style="cursor:pointer; color:var(--primary);" onclick="addNewProfile()">+ 추가</span>
+            <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">
+                <span>시스템 설정 활성화됨</span>
             </div>
-            <div id="profileListArea"></div>
         </div>
     </div>
 
@@ -679,19 +677,10 @@
         function renderAll() {
             if (!appState || !appState.profiles) return;
             
-            // 프로필 선택 로직 보강
-            const profileKeys = Object.keys(appState.profiles);
-            if (!appState.activeProfile && profileKeys.length > 0) {
-                appState.activeProfile = profileKeys[0];
-            }
-
             const profile = appState.profiles[appState.activeProfile];
             
-            // 프로필 목록(사이드바)은 항상 렌더링
-            renderProfileList();
-
             if (!profile) {
-                // 프로필이 없는 경우 안내 표시 및 나머지 영역 비우기
+                // 프로필이 없는 경우 (첫 실행 등) 안내 표시
                 document.querySelectorAll('.tab-pane').forEach(p => {
                     if (p.id !== 'dashboardTab') {
                         p.innerHTML = `
@@ -712,70 +701,6 @@
             renderRules(profile);
         }
 
-        function renderProfileList() {
-            const area = document.getElementById('profileListArea');
-            if (!area) return;
-            
-            area.innerHTML = '';
-            Object.entries(appState.profiles).forEach(([id, prof]) => {
-                const item = document.createElement('div');
-                const isActive = appState.activeProfile === id;
-                item.style.cssText = `
-                    padding: 10px 14px;
-                    border-radius: 8px;
-                    margin-bottom: 4px;
-                    cursor: pointer;
-                    font-size: 0.9rem;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    background: ${isActive ? 'var(--primary)' : 'rgba(255,255,255,0.05)'};
-                    color: ${isActive ? 'white' : '#cbd5e1'};
-                `;
-                item.onclick = () => {
-                    appState.activeProfile = id;
-                    renderAll();
-                };
-                
-                item.innerHTML = `
-                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${prof.name || id}</span>
-                    ${isActive ? '' : `<span style="opacity: 0.5; font-size: 0.7rem;" onclick="event.stopPropagation(); deleteProfile('${id}')">❌</span>`}
-                `;
-                area.appendChild(item);
-            });
-        }
-
-        function addNewProfile() {
-            const name = prompt('새 프로필 이름을 입력하세요:', '새 프로필');
-            if (!name) return;
-            
-            const id = name.trim();
-            if (appState.profiles[id]) {
-                alert('이미 존재하는 프로필 이름입니다.');
-                return;
-            }
-            
-            appState.profiles[id] = {
-                name: id,
-                triggerRules: [],
-                rules: [],
-                scripts: { "인사": "안녕하세요 {customerName}님!" },
-                sequences: { "기본_응답": [{ type: "text", script: "인사" }] }
-            };
-            appState.activeProfile = id;
-            renderAll();
-            showToast(`'${id}' 프로필이 추가되었습니다.`);
-        }
-
-        function deleteProfile(id) {
-            if (!confirm(`'${id}' 프로필을 삭제하시겠습니까?`)) return;
-            delete appState.profiles[id];
-            if (appState.activeProfile === id) {
-                appState.activeProfile = Object.keys(appState.profiles)[0] || null;
-            }
-            renderAll();
-            showToast('프로필이 삭제되었습니다.');
-        }
 
         // --- Trigger Logic (Rules) ---
         function renderTriggerRules(profile) {

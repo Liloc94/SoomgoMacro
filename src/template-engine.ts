@@ -67,7 +67,15 @@ export class TemplateEngine {
             if (fs.existsSync(this.templatesPath)) {
                 const fileData = fs.readFileSync(this.templatesPath, 'utf8');
                 this.config = JSON.parse(fileData);
-                this.activeProfileName = this.config.activeProfile || '본점';
+                
+                // 단일 사용자 환경: 첫 번째 프로필을 최우선으로 사용
+                const profileNames = Object.keys(this.config.profiles || {});
+                if (profileNames.length > 0) {
+                    this.activeProfileName = this.config.activeProfile || profileNames[0];
+                } else {
+                    this.activeProfileName = '기본설정';
+                }
+                
                 console.log(`✅ 템플릿 엔진 로드 완료 (활성 프로필: ${this.activeProfileName})`);
             } else {
                 console.warn('⚠️ 템플릿 파일을 찾을 수 없습니다:', this.templatesPath);
@@ -78,7 +86,14 @@ export class TemplateEngine {
     }
 
     private getActiveProfile() {
-        return this.config.profiles?.[this.activeProfileName] || Object.values(this.config.profiles || {})[0];
+        if (!this.config.profiles) this.config.profiles = {};
+        
+        // 지정된 프로필이 없으면 첫 번째 프로필 반환
+        const active = this.config.profiles[this.activeProfileName];
+        if (active) return active;
+        
+        const firstProfile = Object.values(this.config.profiles)[0];
+        return firstProfile || null;
     }
 
     /**
