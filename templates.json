@@ -287,6 +287,28 @@
                         "script": "인사"
                     }
                 ],
+                "기본_응답": [
+                    {
+                        "type": "text",
+                        "script": "포웨이_특화"
+                    },
+                    {
+                        "type": "text",
+                        "script": "기본문자"
+                    },
+                    {
+                        "type": "image",
+                        "file": "봄 가격/5-1.png"
+                    },
+                    {
+                        "type": "text",
+                        "script": "타입불명_안내"
+                    },
+                    {
+                        "type": "text",
+                        "script": "사진요청"
+                    }
+                ],
                 "스탠드_브랜드불명_시퀀스": [
                     {
                         "type": "text",

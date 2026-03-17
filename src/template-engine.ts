@@ -156,20 +156,39 @@ export class TemplateEngine {
             }
         }
 
-        // rules 매칭 (API 반환값 기준)
+        // rules 매칭 (가중치 기반 최적 매칭)
         if (targetSequenceName === '기본_응답' && profile.rules) {
+            let bestScore = 0;
+            let bestTarget = '기본_응답';
+
             for (const rule of profile.rules) {
-                const matched = rule.keywords.some((kw: string) => {
+                let currentScore = 0;
+                
+                // 해당 규칙의 모든 키워드를 검사하여 일치하는 개수(점수) 계산
+                rule.keywords.forEach((kw: string) => {
                     const kwLower = kw.toLowerCase();
-                    if (typeStr.includes(kwLower)) return true;
                     const normalizedKw = this.normalizeBrand(kw);
-                    if (cleanBrand.includes(normalizedKw) || normalizedKw.includes(cleanBrand)) return true;
-                    return false;
+
+                    // 타입 문자열 매칭
+                    if (typeStr.includes(kwLower)) {
+                        currentScore += 1;
+                    } 
+                    // 브랜드명 매칭 (표준화 명칭 포함 여부)
+                    else if (cleanBrand.includes(normalizedKw) || normalizedKw.includes(cleanBrand)) {
+                        currentScore += 1;
+                    }
                 });
-                if (matched) {
-                    targetSequenceName = rule.target;
-                    break;
+
+                // 더 구체적인(점수가 높은) 규칙이 있다면 갱신
+                if (currentScore > bestScore) {
+                    bestScore = currentScore;
+                    bestTarget = rule.target;
                 }
+            }
+
+            if (bestScore > 0) {
+                targetSequenceName = bestTarget;
+                console.log(`🎯 최적 매칭 발견: ${targetSequenceName} (점수: ${bestScore})`);
             }
         }
 
