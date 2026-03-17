@@ -119,7 +119,7 @@ ipcMain.handle('get-config', async () => {
         if (fs.existsSync(configPath)) {
             return JSON.parse(fs.readFileSync(configPath, 'utf8'));
         }
-    } catch (e) {}
+    } catch (e) { }
     return {};
 });
 
