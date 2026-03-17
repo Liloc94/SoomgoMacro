@@ -52,8 +52,8 @@ export class AutomationAction {
         console.log(`🚀 [시퀀스 시작] 명칭: ${details.targetSequenceName}`);
 
         for (const step of details.sequence) {
-            // 인간미 있는 딜레이 추가 (3~7초 랜덤)
-            const randomDelay = Math.floor(Math.random() * (7000 - 3000 + 1)) + 3000;
+            // 인간미 있는 딜레이 추가 (1~3초 랜덤)
+            const randomDelay = Math.floor(Math.random() * (3000 - 1000 + 1)) + 1000;
             console.log(`⏳ 다음 동작 대기 중... (${(randomDelay / 1000).toFixed(1)}초)`);
             await this.page.waitForTimeout(randomDelay);
 
@@ -124,9 +124,9 @@ export class AutomationAction {
      */
     public async backToChatList() {
         try {
-            await this.page.goto('https://soomgo.com/pro/chats', { 
+            await this.page.goto('https://soomgo.com/pro/chats', {
                 waitUntil: 'domcontentloaded',
-                timeout: 10000 
+                timeout: 10000
             });
             console.log('🔙 채팅 목록으로 복귀 완료');
         } catch (e: any) {

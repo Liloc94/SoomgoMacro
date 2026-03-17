@@ -407,7 +407,13 @@ export class SoomgoBotService {
         this.processedChatIds.add(chatId);
         this.monitor?.markChatAsProcessed(chatId);
         try {
-            fs.writeFileSync(this.PROCESSED_CHATS_FILE, JSON.stringify(Array.from(this.processedChatIds), null, 2));
+            // 데이터가 과도하게 쌓이는 것을 방지 (최근 1,000개만 유지)
+            let idArray = Array.from(this.processedChatIds);
+            if (idArray.length > 1000) {
+                idArray = idArray.slice(-1000);
+                this.processedChatIds = new Set(idArray);
+            }
+            fs.writeFileSync(this.PROCESSED_CHATS_FILE, JSON.stringify(idArray, null, 2));
         } catch (e) {
             console.error('⚠️ 처리된 채팅방 목록 저장 실패:', e);
         }
