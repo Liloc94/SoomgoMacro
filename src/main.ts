@@ -21,20 +21,24 @@ function getSafePath(filename: string): string {
 
     // 2. 배포 모드: AppData 폴더를 사용
     const destPath = path.join(userDataPath, filename);
-    const exeDir = path.dirname(app.getPath('exe'));
-    const srcPath = path.join(exeDir, filename);
+    
+    // ASAR 내부 경로는 app.getAppPath()를 통해 일관되게 접근 가능
+    const asarRoot = app.getAppPath();
+    const srcPath = path.join(asarRoot, filename);
 
     try {
-        // AppData에 파일이 없고 실행 파일 옆에 원본이 있을 때만 복사 (최초 1회)
-        if (!fs.existsSync(destPath) && fs.existsSync(srcPath)) {
-            fs.copyFileSync(srcPath, destPath);
-            console.log(`🚚 [배포판] 초기 데이터를 복사했습니다: ${destPath}`);
-        } 
-        // 둘 다 없는데 templates.json인 경우만 기본값 생성
-        else if (!fs.existsSync(destPath) && filename === 'templates.json') {
-             const defaultContent = { activeProfile: '기본설정', profiles: { '기본설정': { triggerRules: [], rules: [], sequences: {}, scripts: {} } } };
-             fs.writeFileSync(destPath, JSON.stringify(defaultContent, null, 4));
-             console.log(`✅ [배포판] templates.json 기본값을 생성했습니다.`);
+        // AppData에 파일이 없고 ASAR 내부에 원본이 있을 때만 복사 (최초 1회)
+        if (!fs.existsSync(destPath)) {
+            if (fs.existsSync(srcPath)) {
+                fs.copyFileSync(srcPath, destPath);
+                console.log(`🚚 [배포판] ASAR(${srcPath})에서 초기 데이터를 복사했습니다: ${destPath}`);
+            } 
+            // 둘 다 없는데 templates.json인 경우만 기본값 생성
+            else if (filename === 'templates.json') {
+                 const defaultContent = { activeProfile: '기본설정', profiles: { '기본설정': { triggerRules: [], rules: [], sequences: {}, scripts: {} } } };
+                 fs.writeFileSync(destPath, JSON.stringify(defaultContent, null, 4));
+                 console.log(`✅ [배포판] 원본을 찾지 못해 templates.json 기본값을 생성했습니다: ${destPath}`);
+            }
         }
     } catch (e) {
         console.error(`❌ ${filename} 경로 처리 실패:`, e);

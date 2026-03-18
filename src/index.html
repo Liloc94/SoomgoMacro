@@ -38,29 +38,82 @@
             color: white;
             display: flex;
             flex-direction: column;
-            padding: 32px 0;
+            padding: 24px 0;
             flex-shrink: 0;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 100;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            right: -12px;
+            top: 32px;
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid white;
+            color: white;
+            font-size: 12px;
+            z-index: 101;
+            transition: transform 0.3s;
+        }
+
+        .sidebar.collapsed .toggle-btn {
+            transform: rotate(180deg);
         }
 
         .brand {
-            padding: 0 32px 40px;
-            font-size: 1.5rem;
+            padding: 0 24px 40px;
+            font-size: 1.25rem;
             font-weight: 800;
             color: var(--primary);
             display: flex;
             align-items: center;
             gap: 12px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .brand-text {
+            display: none;
         }
 
         .nav-link {
-            padding: 16px 32px;
+            padding: 16px 28px;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             color: #94a3b8;
             font-weight: 500;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .nav-link {
+            padding: 16px 0;
+            justify-content: center;
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .sidebar.collapsed .nav-text {
+            display: none;
         }
 
         .nav-link:hover {
@@ -346,17 +399,38 @@
 
 <body>
     <div id="toastContainer"></div>
-    <div class="sidebar">
-        <div class="brand">🤖 AI MACRO</div>
-        <div class="nav-link active" onclick="switchTab('dashboard')">📊 대시보드</div>
-        <div class="nav-link" onclick="switchTab('trigger')">🎯 트리거 설정</div>
-        <div class="nav-link" onclick="switchTab('scripts')">📝 스크립트 관리</div>
-        <div class="nav-link" onclick="switchTab('sequences')">⚡ 시퀀스 빌더</div>
-        <div class="nav-link" onclick="switchTab('rules')">⚖️ 매칭 규칙</div>
+    <div class="sidebar" id="sidebar">
+        <div class="toggle-btn" onclick="toggleSidebar()">◀</div>
+        <div class="brand">
+            <span class="nav-icon">🤖</span>
+            <span class="brand-text">AI MACRO</span>
+        </div>
+        <div class="nav-link active" onclick="switchTab('dashboard')" title="대시보드">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">대시보드</span>
+        </div>
+        <div class="nav-link" onclick="switchTab('trigger')" title="트리거 설정">
+            <span class="nav-icon">🎯</span>
+            <span class="nav-text">트리거 설정</span>
+        </div>
+        <div class="nav-link" onclick="switchTab('scripts')" title="스크립트 관리">
+            <span class="nav-icon">📝</span>
+            <span class="nav-text">스크립트 관리</span>
+        </div>
+        <div class="nav-link" onclick="switchTab('sequences')" title="시퀀스 빌더">
+            <span class="nav-icon">⚡</span>
+            <span class="nav-text">시퀀스 빌더</span>
+        </div>
+        <div class="nav-link" onclick="switchTab('rules')" title="매칭 규칙">
+            <span class="nav-icon">⚖️</span>
+            <span class="nav-text">매칭 규칙</span>
+        </div>
 
-        <div style="margin-top: auto; padding: 20px 32px; border-top: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">
-                <span>시스템 설정 활성화됨</span>
+        <div
+            style="margin-top: auto; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
+            <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;"
+                class="sidebar-footer-text">
+                <span class="nav-text">시스템 설정 활성화됨</span>
             </div>
         </div>
     </div>
@@ -525,10 +599,9 @@
                         <button class="btn btn-primary" onclick="addNewRule()">+ 규칙 추가</button>
                     </div>
                     <div id="ruleListArea"></div>
-                </div>
-            </div>
         </div>
     </div>
+</div>
 
     <script>
         let appState = null;
@@ -542,42 +615,60 @@
             "2 in 1 (스탠드 + 벽걸이)", "벽걸이형", "스탠드형 (일반)",
             "스탠드형 (스마트)", "천장형 (1·2way)", "천장형 (4way)", "기타"
         ];
+        // 사이드바 토글 기능
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+        }
 
+        // 앱 초기화
         async function init() {
-            appState = await window.electronAPI.getTemplates();
+            // 사이드바 상태 복원
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                document.getElementById('sidebar').classList.add('collapsed');
+            }
 
-            // 데이터가 있는 경우 활성 프로필 강제 지정 (UI 단순화를 위해)
-            if (appState && appState.profiles) {
-                if (!appState.activeProfile || !appState.profiles[appState.activeProfile]) {
-                    appState.activeProfile = Object.keys(appState.profiles)[0] || null;
+            try {
+                appState = await window.electronAPI.getTemplates();
+
+                // 데이터가 있는 경우 활성 프로필 강제 지정 (UI 단순화를 위해)
+                if (appState && appState.profiles) {
+                    if (!appState.activeProfile || !appState.profiles[appState.activeProfile]) {
+                        appState.activeProfile = Object.keys(appState.profiles)[0] || null;
+                    }
                 }
-            }
 
-            const config = await window.electronAPI.getConfig();
+                const config = await window.electronAPI.getConfig();
 
-            // 시스템 설정 UI 초기화
-            if (config.refreshInterval) {
-                document.getElementById('refreshIntervalInput').value = config.refreshInterval;
-            }
-            if (config.email) {
-                document.getElementById('emailInput').value = config.email;
-            }
-            if (config.password) {
-                document.getElementById('passwordInput').value = config.password;
-            }
-            isRefreshEnabled = config.isRefreshEnabled === true;
-            isSafeMode = config.safeMode !== false; // 기본값 활성(안전 우선)
-            updateRefreshUI();
-            updateSafeModeUI();
+                // 시스템 설정 UI 초기화
+                if (config.refreshInterval) {
+                    document.getElementById('refreshIntervalInput').value = config.refreshInterval;
+                }
+                if (config.email) {
+                    document.getElementById('emailInput').value = config.email;
+                }
+                if (config.password) {
+                    document.getElementById('passwordInput').value = config.password;
+                }
+                isRefreshEnabled = config.isRefreshEnabled === true;
+                isSafeMode = config.safeMode !== false; // 기본값 활성(안전 우선)
+                updateRefreshUI();
+                updateSafeModeUI();
 
-            // 에러 알림 리스너 등록
-            window.electronAPI.onError((message) => {
-                showToast(message, 'error');
-            });
+                // 에러 알림 리스너 등록
+                window.electronAPI.onError((message) => {
+                    showToast(message, 'error');
+                });
 
-            renderAll();
-            updateTodayCount(); // 초기 카운트 표시
-            startLogPolling();
+                renderAll();
+                updateTodayCount(); // 초기 카운트 표시
+                startLogPolling();
+            } catch (e) {
+                console.error("초기화 실패:", e);
+            }
         }
 
         async function updateTodayCount() {

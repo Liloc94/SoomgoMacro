@@ -56,22 +56,30 @@ export class AutomationAction {
 
         console.log(`🚀 [시퀀스 시작] 명칭: ${details.targetSequenceName}`);
 
-        for (const step of details.sequence) {
-            // 인간미 있는 딜레이 추가 (0.1~0.5초 랜덤)
-            const randomDelay = Math.floor(Math.random() * (500 - 100 + 1)) + 100;
-            console.log(`⏳ 다음 동작 대기 중... (${(randomDelay / 1000).toFixed(1)}초)`);
-            await this.page.waitForTimeout(randomDelay);
+        let imageBuffer: string[] = [];
 
+        for (let i = 0; i < details.sequence.length; i++) {
+            const step = details.sequence[i];
             const resolved = this.engine.resolveStep(step, details);
 
-            if (resolved.type === 'text') {
+            if (resolved.type === 'image') {
+                imageBuffer.push(resolved.content);
+                
+                // 다음 스텝이 이미지가 아니거나 마지막 스텝이면 업로드 수행
+                const nextStep = details.sequence[i + 1];
+                const nextResolved = nextStep ? this.engine.resolveStep(nextStep, details) : null;
+                
+                if (!nextResolved || nextResolved.type !== 'image') {
+                    await this.page.waitForTimeout(this.getRandomDelay());
+                    await this.uploadImages(imageBuffer);
+                    await this.clickSend();
+                    imageBuffer = [];
+                }
+            } else if (resolved.type === 'text') {
+                await this.page.waitForTimeout(this.getRandomDelay());
                 await this.page.fill(inputSelector, resolved.content);
                 await this.clickSend();
                 console.log(`⌨️ 텍스트 전송: ${resolved.content.substring(0, 15)}...`);
-            } else if (resolved.type === 'image') {
-                await this.uploadImage(resolved.content);
-                await this.clickSend();
-                console.log(`📸 이미지 전송: ${resolved.content}`);
             }
         }
 
@@ -80,31 +88,58 @@ export class AutomationAction {
         await this.backToChatList();
     }
 
+    private getRandomDelay() {
+        return Math.floor(Math.random() * (500 - 100 + 1)) + 100;
+    }
+
     // sendCompensationMessage() 메서드는 이제 시퀀스 시스템으로 통합되어 제거되었습니다.
 
     /**
-     * 지정된 파일명을 기반으로 이미지를 업로드합니다.
-     * @param fileName 업로드할 이미지 파일 이름
+     * 지정된 파일명들을 기반으로 이미지를 복수 업로드합니다.
+     * @param fileNames 업로드할 이미지 파일 이름 배열
      */
-    private async uploadImage(fileName: string) {
-        const baseDir = this.imageDir || path.resolve(process.cwd(), 'images');
-        // 확장자가 없으면 .png 추가
-        const finalFileName = fileName.endsWith('.png') ? fileName : `${fileName}.png`;
-        const finalPath = path.resolve(baseDir, finalFileName);
+    private async uploadImages(fileNames: string[]) {
+        // [수정] 배포 환경에서도 고정적으로 이미지를 찾을 수 있도록 APPDATA 경로 우선 활용
+        const userDataPath = require('electron').app.getPath('userData');
+        const defaultImagesPath = path.join(userDataPath, 'images');
+        
+        // 사용자가 명시적으로 설정한 경로가 있다면 사용, 없으면 APPDATA 내의 images 폴더 사용
+        const baseDir = this.imageDir || defaultImagesPath;
+        const filePaths: string[] = [];
+
+        console.log(`🔍 이미지 검색 위치: ${baseDir}`);
+
+        for (const fileName of fileNames) {
+            // 확장자가 없으면 .png 추가
+            const finalFileName = fileName.endsWith('.png') ? fileName : `${fileName}.png`;
+            const finalPath = path.resolve(baseDir, finalFileName);
+
+            if (fs.existsSync(finalPath)) {
+                filePaths.push(finalPath);
+            } else {
+                // [Fallback] 혹시 모를 로컬 실행 시의 images 폴더도 체크
+                const localFallback = path.resolve(process.cwd(), 'images', finalFileName);
+                if (fs.existsSync(localFallback)) {
+                    filePaths.push(localFallback);
+                } else {
+                    console.warn(`❌ 이미지를 찾을 수 없음: ${finalPath}`);
+                }
+            }
+        }
+
+        if (filePaths.length === 0) return;
 
         if (this.isSafeMode) {
-            console.log(`🛡️ [시뮬레이션] 이미지 업로드 생략: ${finalFileName}`);
+            console.log(`🛡️ [시뮬레이션] 이미지 복수 업로드 생략: ${fileNames.join(', ')}`);
             return;
         }
 
-        if (fs.existsSync(finalPath)) {
-            console.log(`📸 이미지 첨부: ${finalPath}`);
-            await this.page.setInputFiles('input[type="file"]', finalPath);
-            // [중요] 업로드 후 브라우저 처리 대기 (안정화 시간 대폭 강화)
-            await this.page.waitForTimeout(1500);
-        } else {
-            console.warn(`⚠️ 이미지를 찾을 수 없음: ${finalPath}`);
-        }
+        console.log(`📸 이미지 첨부 (${filePaths.length}장): ${fileNames.join(', ')}`);
+        await this.page.setInputFiles('input[type="file"]', filePaths);
+        
+        // 업로드 후 브라우저 처리 대기 (파일 개수에 따라 대기 시간 조정)
+        const waitTime = filePaths.length > 1 ? 2500 : 1500;
+        await this.page.waitForTimeout(waitTime);
     }
 
     /**

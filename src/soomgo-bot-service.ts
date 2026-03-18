@@ -146,13 +146,13 @@ export class SoomgoBotService {
                     this.isAutomationProcessing = true;
                     this.currentProcessingChatId = chatId;
 
+                    // [중요] 중복 실행 방지를 위해 시작 즉시 마킹
+                    this.markChatAsProcessed(chatId);
+                    this.monitor?.markChatAsProcessed(chatId);
+
                     try {
                         console.log(`🚀 [신규 견적] 자동 응답 실행 시작 (Chat ID: ${chatId})`);
                         await this.automation!.runAutomation(data);
-
-                        // [핵심] 자동화 완료 시점에만 마킹 (기록)
-                        this.markChatAsProcessed(chatId);
-                        this.monitor?.markChatAsProcessed(chatId); // 모니터 메모리에도 즉시 반영
 
                         const details = this.engine.getAutomationDetails(data);
                         await this.logger.addLog({

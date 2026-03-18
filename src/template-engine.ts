@@ -97,20 +97,30 @@ export class TemplateEngine {
     }
 
     /**
+     * 문자열에서 모든 공백과 특수문자를 제거하여 비교를 용이하게 합니다.
+     */
+    private cleanText(text: string): string {
+        if (!text) return '';
+        return text.replace(/\s+/g, '').replace(/[/\\?%*:|"<>]/g, '').toLowerCase();
+    }
+
+    /**
      * 브랜드명을 표준화합니다.
      */
     private normalizeBrand(brand: string): string {
+        if (!brand) return '잘 모르겠음';
+
         // (괄호) 이전의 텍스트만 추출하여 정리
         const brandMatch = brand.match(/^([^(]+)/);
-        const clean = (brandMatch ? brandMatch[1] : brand).trim().toLowerCase();
+        const raw = (brandMatch ? brandMatch[1] : brand).trim().toLowerCase();
 
         // 부분 일치 검사를 통한 표준화
-        if (clean.includes('삼성') || clean.includes('SAMSUNG')) return '삼성전자';
-        if (clean.includes('엘지') || clean.includes('lg')) return 'LG전자';
-        if (clean.includes('위니아') || clean.includes('대우') || clean.includes('캐리어')) return '기타 / 알 수 없음';
+        if (raw.includes('삼성') || raw.includes('samsung')) return '삼성전자';
+        if (raw.includes('엘지') || raw.includes('lg')) return 'LG전자';
+        if (raw.includes('위니아') || raw.includes('대우') || raw.includes('캐리어') || raw.includes('carrier')) return '기타 / 알 수 없음';
 
-        // 매칭되는 게 없으면 특수문자만 제거하여 반환
-        return clean.replace(/[/\\?%*:|"<>]/g, '').trim();
+        // 매칭되는 게 없으면 기본 클린업만 수행하여 반환
+        return raw.trim();
     }
 
     /**
@@ -142,14 +152,18 @@ export class TemplateEngine {
         const { brand: rawBrand, type: rawType, quantity } = data;
 
         const cleanBrand = this.normalizeBrand(rawBrand);
-        const typeStr = rawType.replace(/\s+/g, '').toLowerCase();
+        const typeStr = rawType.toLowerCase();
+
+        // 비교를 위해 모든 공백과 특수문자를 제거한 버전 준비
+        const ultraCleanBrand = this.cleanText(cleanBrand);
+        const ultraCleanType = this.cleanText(rawType);
 
         let targetSequenceName = '기본_응답';
 
-        // 브랜드/종류 불명확한 경우
+        // 브랜드/종류 불명확한 경우 (우선 순위 체크)
         if (
-            cleanBrand.includes('잘 모르겠음') || typeStr.includes('잘모르겠음') ||
-            cleanBrand.includes('알 수 없음') || typeStr.includes('알수없음')
+            ultraCleanBrand.includes('잘모르겠음') || ultraCleanType.includes('잘모르겠음') ||
+            ultraCleanBrand.includes('알수없음') || ultraCleanType.includes('알수없음')
         ) {
             if (profile.sequences?.['미확인_안내_시퀀스']) {
                 targetSequenceName = '미확인_안내_시퀀스';
@@ -163,24 +177,30 @@ export class TemplateEngine {
 
             for (const rule of profile.rules) {
                 let currentScore = 0;
-                
+
                 // 해당 규칙의 모든 키워드를 검사하여 일치하는 개수(점수) 계산
                 rule.keywords.forEach((kw: string) => {
-                    const kwLower = kw.toLowerCase();
+                    const ultraCleanKw = this.cleanText(kw);
                     const normalizedKw = this.normalizeBrand(kw);
+                    const ultraCleanNormalizedKw = this.cleanText(normalizedKw);
 
-                    // 타입 문자열 매칭
-                    if (typeStr.includes(kwLower)) {
+                    let matched = false;
+                    // 1. 타입 문자열 매칭 (공백 제거 버전)
+                    if (ultraCleanType.includes(ultraCleanKw)) {
                         currentScore += 1;
-                    } 
-                    // 브랜드명 매칭 (표준화 명칭 포함 여부)
-                    else if (cleanBrand.includes(normalizedKw) || normalizedKw.includes(cleanBrand)) {
+                        matched = true;
+                    }
+
+                    // 2. 브랜드명 매칭 (표준화 명칭 포함 여부, 공백 제거 버전)
+                    // 이미 타입에서 매칭되었더라도 브랜드가 다를 수 있으므로 별도 체크 (가중치 합산)
+                    if (ultraCleanBrand.includes(ultraCleanNormalizedKw) || ultraCleanNormalizedKw.includes(ultraCleanBrand)) {
                         currentScore += 1;
+                        matched = true;
                     }
                 });
 
-                // 더 구체적인(점수가 높은) 규칙이 있다면 갱신
-                if (currentScore > bestScore) {
+                // 더 구체적인(점수가 높은) 규칙이 있다면 갱신. 점수가 같으면 뒤에 정의된 규칙 우선(사용자 추가분)
+                if (currentScore >= bestScore && currentScore > 0) {
                     bestScore = currentScore;
                     bestTarget = rule.target;
                 }
