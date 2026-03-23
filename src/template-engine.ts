@@ -5,6 +5,7 @@ export interface ExtractionData {
     brand: string;
     type: string;
     quantity: string;
+    service?: string; // 추가
 }
 
 export interface StepCondition {
@@ -153,10 +154,12 @@ export class TemplateEngine {
 
         const cleanBrand = this.normalizeBrand(rawBrand);
         const typeStr = rawType.toLowerCase();
+        const serviceStr = (data.service || '').toLowerCase();
 
         // 비교를 위해 모든 공백과 특수문자를 제거한 버전 준비
         const ultraCleanBrand = this.cleanText(cleanBrand);
-        const ultraCleanType = this.cleanText(rawType);
+        let ultraCleanType = this.cleanText(rawType);
+        const ultraCleanService = this.cleanText(serviceStr);
 
         let targetSequenceName = '기본_응답';
 
@@ -165,8 +168,16 @@ export class TemplateEngine {
             ultraCleanBrand.includes('잘모르겠음') || ultraCleanType.includes('잘모르겠음') ||
             ultraCleanBrand.includes('알수없음') || ultraCleanType.includes('알수없음')
         ) {
-            if (profile.sequences?.['미확인_안내_시퀀스']) {
-                targetSequenceName = '미확인_안내_시퀀스';
+            // [추가] 시스템에어컨 + 가정용 조건일 경우 1way로 추정하여 매칭 시도
+            if (ultraCleanService.includes('시스템에어컨') && data.useType.includes('가정용')) {
+                if (ultraCleanType.includes('잘모르겠음') || ultraCleanType.includes('알수없음')) {
+                    console.log('💡 시스템에어컨 + 가정용 조건 감지: 1way로 추정하여 매칭을 시도합니다.');
+                    ultraCleanType = '1way';
+                }
+            } else {
+                if (profile.sequences?.['미확인_안내_시퀀스']) {
+                    targetSequenceName = '미확인_안내_시퀀스';
+                }
             }
         }
 
@@ -192,9 +203,14 @@ export class TemplateEngine {
                     }
 
                     // 2. 브랜드명 매칭 (표준화 명칭 포함 여부, 공백 제거 버전)
-                    // 이미 타입에서 매칭되었더라도 브랜드가 다를 수 있으므로 별도 체크 (가중치 합산)
                     if (ultraCleanBrand.includes(ultraCleanNormalizedKw) || ultraCleanNormalizedKw.includes(ultraCleanBrand)) {
                         currentScore += 1;
+                        matched = true;
+                    }
+
+                    // 3. 서비스명 매칭 (가중치 높게 부여)
+                    if (ultraCleanService.includes(ultraCleanKw)) {
+                        currentScore += 2;
                         matched = true;
                     }
                 });
@@ -290,7 +306,8 @@ export class TemplateEngine {
             useType: find(['어떤 용도의 에어컨인가요', '용도']),
             brand: find(['어떤 브랜드 제품인가요', '가전 브랜드', '제품 브랜드', '브랜드']),
             type: find(['에어컨 종류가 무엇인가요', '에어컨 종류', '종류']),
-            quantity: find(['에어컨 수량', '갯수', '대수', '몇대'])
+            quantity: find(['에어컨 수량', '갯수', '대수', '몇대']),
+            service: '에어컨 청소' // 기본값
         };
     }
 }

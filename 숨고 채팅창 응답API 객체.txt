@@ -1,0 +1,156 @@
+https://api.soomgo.com/v2/requests/received/69b2703b8ec437e1a556c35f
+숨고 채팅방입장 시 고객 정보 반환하는 api 응답객체
+{
+    "code": 0,
+    "reason": "",
+    "request": "",
+    "response": {
+        "id": "69b2703b8ec437e1a556c35f",
+        "createdAt": "2026-03-12T16:50:19",
+        "expiredAt": "2026-03-14T16:50:19",
+        "readAt": "2026-03-12T16:51:33",
+        "deletedAt": null,
+        "status": "opened",
+        "isTargeted": false,
+        "isQuotable": true,
+        "isQuoteSent": true,
+        "isAdDisplay": false,
+        "quoteCount": 9,
+        "quoteLimit": 10,
+        "originPrice": 2590,
+        "price": 2590,
+        "geolocation": {
+            "lat": 37.149882620159296,
+            "lng": 127.07752655259397
+        },
+        "serviceInfo": {
+            "category1": {
+                "id": 59,
+                "name": "이사/청소",
+                "slug": "이사-청소A"
+            },
+            "category2": {
+                "id": 274,
+                "name": "가전/가구 청소",
+                "slug": "가전-가구-청소A"
+            },
+            "service": {
+                "id": 686,
+                "name": "에어컨 청소",
+                "slug": "에어컨-청소",
+                "isProLicenseCheck": false,
+                "isForceLicense": false,
+                "isForceAuth": true
+            }
+        },
+        "address": "경기 오산시",
+        "user": {
+            "id": 18101696,
+            "name": "이주설",
+            "profileImageUrl": "https://static.cdn.soomgo.com/upload/profile/aaa04e79-b50c-4c64-8bb7-60e913bc0a8d.jpg",
+            "requestCount": 1,
+            "joinedAt": "2026-03-12T16:50:11.921025",
+            "firstChatResponseRate": 0
+        },
+        "items": [
+            {
+                "question": "어떤 용도의 에어컨인가요?",
+                "answer": "가정용"
+            },
+            {
+                "question": "에어컨 종류가 무엇인가요?",
+                "answer": "2 in 1 (스탠드 + 벽걸이)"
+            },
+            {
+                "question": "에어컨 수량을 선택해주세요.",
+                "answer": "2대"
+            },
+            {
+                "question": "에어컨이 몇 평형인가요?",
+                "answer": "30평형대"
+            },
+            {
+                "question": "어떤 브랜드 제품인가요?",
+                "answer": "삼성 (SAMSUNG)"
+            },
+            {
+                "question": "해당되는 항목에 모두 선택해주세요.",
+                "answer": "해당 없음"
+            },
+            {
+                "question": "서비스 희망일을 선택해주세요.",
+                "answer": "협의 가능해요."
+            },
+            {
+                "question": "지역을 선택해주세요. ",
+                "answer": "경기 오산시"
+            }
+        ],
+        "formattedRequestInfo": {
+            "keywordItems": [
+                {
+                    "question": "서비스 대상",
+                    "answer": "가정용"
+                },
+                {
+                    "question": "종류",
+                    "answer": "2 in 1 (스탠드 + 벽걸이)"
+                },
+                {
+                    "question": "수량",
+                    "answer": "2대"
+                },
+                {
+                    "question": "사이즈",
+                    "answer": "30평형대"
+                },
+                {
+                    "question": "브랜드 정보",
+                    "answer": "삼성 (SAMSUNG)"
+                },
+                {
+                    "question": "해당사항",
+                    "answer": "해당 없음"
+                }
+            ],
+            "highlightAnswers": {
+                "address1": "경기 오산시",
+                "date": "협의 가능해요."
+            },
+            "items": [
+                {
+                    "question": "어떤 용도의 에어컨인가요?",
+                    "answer": "가정용"
+                },
+                {
+                    "question": "에어컨 종류가 무엇인가요?",
+                    "answer": "2 in 1 (스탠드 + 벽걸이)"
+                },
+                {
+                    "question": "에어컨 수량을 선택해주세요.",
+                    "answer": "2대"
+                },
+                {
+                    "question": "에어컨이 몇 평형인가요?",
+                    "answer": "30평형대"
+                },
+                {
+                    "question": "어떤 브랜드 제품인가요?",
+                    "answer": "삼성 (SAMSUNG)"
+                },
+                {
+                    "question": "해당되는 항목에 모두 선택해주세요.",
+                    "answer": "해당 없음"
+                }
+            ]
+        },
+        "additionalRequirement": {
+            "images": [],
+            "text": ""
+        },
+        "cashBackEvent": null,
+        "isQuoteTemplateAvailable": true,
+        "paybackEvent": null,
+        "otherProviderHireStatus": null
+    }
+}

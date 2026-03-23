@@ -150,15 +150,17 @@ export class NetworkMonitor {
 
                 const items = data.response.items;
                 const customerName: string = data.response.user?.name || '고객';
+                const serviceName: string = data.response.serviceInfo?.service?.name || '에어컨 청소';
 
                 const extraction: ExtractionData = {
                     useType: this.findAnswer(items, ['어떤 용도', '용도의 에어컨', '용도']),
                     brand: this.findAnswer(items, ['어떤 브랜드', '브랜드 제품', '브랜드']),
                     type: this.findAnswer(items, ['에어컨 종류', '종류가 무엇']),
-                    quantity: this.findAnswer(items, ['에어컨 수량', '갯수', '대수', '몇대'])
+                    quantity: this.findAnswer(items, ['에어컨 수량', '갯수', '대수', '몇대']),
+                    service: serviceName
                 };
 
-                console.log(`✅ 고객 정보 추출 완료: 브랜드=${extraction.brand}, 종류=${extraction.type}, 고객=${customerName}`);
+                console.log(`✅ 고객 정보 추출 완료: 서비스=${serviceName}, 브랜드=${extraction.brand}, 종류=${extraction.type}, 고객=${customerName}`);
                 await this.onNewRequest(extraction, customerName);
             }
         } catch (e) {
